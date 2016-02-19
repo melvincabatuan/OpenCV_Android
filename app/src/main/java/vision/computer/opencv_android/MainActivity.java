@@ -31,7 +31,6 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.JavaCameraView;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
@@ -63,7 +62,7 @@ public class MainActivity extends ActionBarActivity
 
     // Whether the active camera is front-facing.
     // If so, the camera view should be mirrored.
-    private boolean mIsCameraFrontFacing;
+    //private boolean mIsCameraFrontFacing;
 
     // The number of cameras on the device.
     private int mNumCameras;
@@ -93,7 +92,6 @@ public class MainActivity extends ActionBarActivity
                         case LoaderCallbackInterface.SUCCESS:
                             Log.d(TAG, "OpenCV loaded successfully");
                             mCameraView.enableView();
-                            //mCameraView.enableFpsMeter();
                             mBgr = new Mat();
                             break;
                         default:
@@ -129,14 +127,11 @@ public class MainActivity extends ActionBarActivity
                 Build.VERSION_CODES.GINGERBREAD) {
             CameraInfo cameraInfo = new CameraInfo();
             Camera.getCameraInfo(mCameraIndex, cameraInfo);
-            mIsCameraFrontFacing =
-                    (cameraInfo.facing ==
-                            CameraInfo.CAMERA_FACING_FRONT);
+
             mNumCameras = Camera.getNumberOfCameras();
             camera = Camera.open(mCameraIndex);
         } else { // pre-Gingerbread
             // Assume there is only 1 camera and it is rear-facing.
-            mIsCameraFrontFacing = false;
             mNumCameras = 1;
             camera = Camera.open();
         }
@@ -204,11 +199,7 @@ public class MainActivity extends ActionBarActivity
     @Override
     public boolean onCreateOptionsMenu(final Menu menu) {
         getMenuInflater().inflate(R.menu.activity_main, menu);
-        if (mNumCameras < 2) {
-            // Remove the option to switch cameras, since there is
-            // only 1.
-            menu.removeItem(R.id.menu_next_camera);
-        }
+
         int numSupportedImageSizes = mSupportedImageSizes.size();
         if (numSupportedImageSizes > 1) {
             final SubMenu sizeSubMenu = menu.addSubMenu(
@@ -237,19 +228,8 @@ public class MainActivity extends ActionBarActivity
 
             return true;
         }
+
         switch (item.getItemId()) {
-            case R.id.menu_next_camera:
-                mIsMenuLocked = true;
-
-                // With another camera index, recreate the activity.
-                mCameraIndex++;
-                if (mCameraIndex == mNumCameras) {
-                    mCameraIndex = 0;
-                }
-                mImageSizeIndex = 0;
-                recreate();
-
-                return true;
             case R.id.menu_take_photo:
                 mIsMenuLocked = true;
 
@@ -278,11 +258,6 @@ public class MainActivity extends ActionBarActivity
         if (mIsPhotoPending) {
             mIsPhotoPending = false;
             takePhoto(rgba);
-        }
-
-        if (mIsCameraFrontFacing) {
-            // Mirror (horizontally flip) the preview.
-            Core.flip(rgba, rgba, 1);
         }
 
         return rgba;

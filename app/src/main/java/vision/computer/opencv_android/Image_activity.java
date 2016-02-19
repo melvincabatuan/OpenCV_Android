@@ -17,9 +17,9 @@ public class Image_activity extends Activity {
     public static final String PHOTO_MIME_TYPE = "image/png";
 
     public static final String EXTRA_PHOTO_URI =
-            "com.nummist.secondsight.LabActivity.extra.PHOTO_URI";
+            "vision.computer.opencv_android.PHOTO_URI";
     public static final String EXTRA_PHOTO_DATA_PATH =
-            "com.nummist.secondsight.LabActivity.extra.PHOTO_DATA_PATH";
+            "vision.computer.opencv_android.PHOTO_DATA_PATH";
 
     private Uri mUri;
     private String mDataPath;
