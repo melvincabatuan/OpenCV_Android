@@ -6,6 +6,7 @@
     <string name="menu_next_camera">Next Cam</string>
     <string name="menu_take_photo">Take Photo</string>
     <string name="menu_image_size">Size</string>
+    <string name="menu_image_type">Photo type</string>
     <string name="photo_delete_prompt_message">This photo is saved in your Gallery. Do you want to delete it?</string>
     <string name="photo_delete_prompt_title">Delete photo?</string>
     <string name="photo_error_message">Failed to save photo</string>

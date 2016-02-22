@@ -34,7 +34,6 @@ public class Image_activity extends Activity {
 
         final ImageView imageView = new ImageView(this);
         imageView.setImageURI(mUri);
-
         setContentView(imageView);
     }
 
@@ -113,4 +112,6 @@ public class Image_activity extends Activity {
         startActivity(Intent.createChooser(intent,
                 getString(R.string.photo_send_chooser_title)));
     }
+
+
 }

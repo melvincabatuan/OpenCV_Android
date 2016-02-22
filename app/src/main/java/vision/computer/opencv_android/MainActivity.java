@@ -1,13 +1,5 @@
 package vision.computer.opencv_android;
-import java.io.File;
-import java.util.List;
 
-import android.net.Uri;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Environment;
-import android.provider.MediaStore;
-import android.provider.MediaStore.Images;
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Intent;
@@ -15,6 +7,12 @@ import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.Parameters;
 import android.hardware.Camera.Size;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.provider.MediaStore.Images;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -28,12 +26,16 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
-import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.JavaCameraView;
+import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 // Use the deprecated Camera class.
 @SuppressWarnings("deprecation")
@@ -52,20 +54,15 @@ public class MainActivity extends ActionBarActivity
             "imageSizeIndex";
 
     // An ID for items in the image size submenu.
-    private static final int MENU_GROUP_ID_SIZE = 2;
+    private static final int MENU_GROUP_ID_SIZE = 3;
+    private static final int MENU_CONTRAST = 2;
+    private static final int MENU_HEIST = 1;
 
     // The index of the active camera.
     private int mCameraIndex;
 
     // The index of the active image size.
     private int mImageSizeIndex;
-
-    // Whether the active camera is front-facing.
-    // If so, the camera view should be mirrored.
-    //private boolean mIsCameraFrontFacing;
-
-    // The number of cameras on the device.
-    private int mNumCameras;
 
     // The image sizes supported by the active camera.
     private List<Size> mSupportedImageSizes;
@@ -82,6 +79,8 @@ public class MainActivity extends ActionBarActivity
     // Whether an asynchronous menu action is in progress.
     // If so, menu interaction should be disabled.
     private boolean mIsMenuLocked;
+
+    ArrayList<String> imageTypes = new ArrayList<String>();
 
     // The OpenCV loader callback.
     private BaseLoaderCallback mLoaderCallback =
@@ -100,6 +99,10 @@ public class MainActivity extends ActionBarActivity
                     }
                 }
             };
+    /*  mPhotoType = 0 --> Normal camera
+        mPhotoType = 1 --> BW camera
+        mPhotoType = 2 --> Normalice heist  */
+    private int mPhotoType = 0;
 
     // Suppress backward incompatibility errors because we provide
     // backward-compatible fallbacks.
@@ -107,6 +110,10 @@ public class MainActivity extends ActionBarActivity
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        imageTypes.add("Normal");
+        imageTypes.add("Contrast");
+        imageTypes.add("Heist");
 
         final Window window = getWindow();
         window.addFlags(
@@ -123,18 +130,12 @@ public class MainActivity extends ActionBarActivity
         }
 
         final Camera camera;
-        if (Build.VERSION.SDK_INT >=
-                Build.VERSION_CODES.GINGERBREAD) {
-            CameraInfo cameraInfo = new CameraInfo();
-            Camera.getCameraInfo(mCameraIndex, cameraInfo);
 
-            mNumCameras = Camera.getNumberOfCameras();
-            camera = Camera.open(mCameraIndex);
-        } else { // pre-Gingerbread
-            // Assume there is only 1 camera and it is rear-facing.
-            mNumCameras = 1;
-            camera = Camera.open();
-        }
+        CameraInfo cameraInfo = new CameraInfo();
+        Camera.getCameraInfo(mCameraIndex, cameraInfo);
+
+        camera = Camera.open(mCameraIndex);
+
         final Parameters parameters = camera.getParameters();
         camera.release();
         mSupportedImageSizes =
@@ -200,16 +201,23 @@ public class MainActivity extends ActionBarActivity
     public boolean onCreateOptionsMenu(final Menu menu) {
         getMenuInflater().inflate(R.menu.activity_main, menu);
 
-        int numSupportedImageSizes = mSupportedImageSizes.size();
-        if (numSupportedImageSizes > 1) {
+        if (mSupportedImageSizes.size() > 1) {
             final SubMenu sizeSubMenu = menu.addSubMenu(
                     R.string.menu_image_size);
-            for (int i = 0; i < numSupportedImageSizes; i++) {
+            //Add all the sizes (resolution) that teh camera offers to the sub Menu
+            for (int i = 0; i < mSupportedImageSizes.size(); i++) {
                 final Size size = mSupportedImageSizes.get(i);
                 sizeSubMenu.add(MENU_GROUP_ID_SIZE, i, Menu.NONE,
                         String.format("%dx%d", size.width,
                                 size.height));
             }
+        }
+        final SubMenu imageSubMenu = menu.addSubMenu(
+                R.string.menu_image_type);
+        int i = 0;
+        for (String s : imageTypes) {
+            imageSubMenu.add(0, i, Menu.NONE, s);
+            i++;
         }
         return true;
     }
@@ -223,19 +231,31 @@ public class MainActivity extends ActionBarActivity
             return true;
         }
         if (item.getGroupId() == MENU_GROUP_ID_SIZE) {
+            //Update of the camera resolution and frame re-creation
             mImageSizeIndex = item.getItemId();
             recreate();
-
             return true;
         }
 
         switch (item.getItemId()) {
             case R.id.menu_take_photo:
+                //Do not let to use the menu while taking a photo
                 mIsMenuLocked = true;
-
-                // Next frame, take the photo.
+                // FLAG Next frame, take the photo.
                 mIsPhotoPending = true;
 
+                return true;
+            case R.id.menu_contrast:
+                if (mPhotoType == 1)
+                    mPhotoType = 0;
+                else
+                    mPhotoType = 1;
+                return true;
+            case R.id.menu_heist:
+                if (mPhotoType == 2)
+                    mPhotoType = 0;
+                else
+                    mPhotoType = 2;
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -259,8 +279,8 @@ public class MainActivity extends ActionBarActivity
             mIsPhotoPending = false;
             takePhoto(rgba);
         }
-
         return rgba;
+
     }
 
     private void takePhoto(final Mat rgba) {
@@ -276,6 +296,7 @@ public class MainActivity extends ActionBarActivity
         final String photoPath = albumPath + File.separator +
                 currentTimeMillis + Image_activity.PHOTO_FILE_EXTENSION;
         final ContentValues values = new ContentValues();
+
         values.put(MediaStore.MediaColumns.DATA, photoPath);
         values.put(Images.Media.MIME_TYPE,
                 Image_activity.PHOTO_MIME_TYPE);
@@ -294,6 +315,22 @@ public class MainActivity extends ActionBarActivity
 
         // Try to create the photo.
         Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+
+        if (mPhotoType != 0) {
+            Mat grayMat = new Mat();
+            Mat bwMat = new Mat();
+
+            Imgproc.cvtColor(rgba, grayMat, Imgproc.COLOR_RGB2GRAY);
+            Imgproc.equalizeHist(grayMat, grayMat);
+
+            Imgproc.threshold(grayMat, bwMat, 127.5, 255.0, Imgproc.THRESH_OTSU);
+
+            if (mPhotoType == 1)
+                mBgr = bwMat;
+            if (mPhotoType == 2)
+                mBgr = grayMat;
+        }
+
         if (!Imgcodecs.imwrite(photoPath, mBgr)) {
             Log.e(TAG, "Failed to save photo to " + photoPath);
             onTakePhotoFailed();
