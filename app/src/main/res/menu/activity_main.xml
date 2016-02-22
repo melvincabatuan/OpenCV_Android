@@ -4,12 +4,4 @@
         android:id="@+id/menu_take_photo"
         app:showAsAction="ifRoom|withText"
         android:title="@string/menu_take_photo" />
-    <item
-        android:id="@+id/menu_contrast"
-        app:showAsAction="ifRoom|withText"
-        android:title="Contrast" />
-    <item
-        android:id="@+id/menu_heist"
-        app:showAsAction="ifRoom|withText"
-        android:title="Heist" />
 </menu>

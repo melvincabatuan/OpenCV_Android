@@ -55,8 +55,7 @@ public class MainActivity extends ActionBarActivity
 
     // An ID for items in the image size submenu.
     private static final int MENU_GROUP_ID_SIZE = 3;
-    private static final int MENU_CONTRAST = 2;
-    private static final int MENU_HEIST = 1;
+    private static final int MENU_GROUP_ID_TYPE = 2;
 
     // The index of the active camera.
     private int mCameraIndex;
@@ -236,22 +235,30 @@ public class MainActivity extends ActionBarActivity
             recreate();
             return true;
         }
+        if(item.getGroupId() == MENU_GROUP_ID_TYPE){
+           if(item.getTitle().equals(getResources().getString(R.string.menu_normal)))
+               mPhotoType = 0;
+            if(item.getTitle().equals(getResources().getString(R.string.menu_contrast)))
+                mPhotoType = 1;
+            if(item.getTitle().equals(getResources().getString(R.string.menu_heist)))
+                mPhotoType = 2;
 
+        }
         switch (item.getItemId()) {
-            case R.id.menu_take_photo:
+            case 0:
                 //Do not let to use the menu while taking a photo
                 mIsMenuLocked = true;
                 // FLAG Next frame, take the photo.
                 mIsPhotoPending = true;
 
                 return true;
-            case R.id.menu_contrast:
+            case 1:
                 if (mPhotoType == 1)
                     mPhotoType = 0;
                 else
                     mPhotoType = 1;
                 return true;
-            case R.id.menu_heist:
+            case 2:
                 if (mPhotoType == 2)
                     mPhotoType = 0;
                 else
