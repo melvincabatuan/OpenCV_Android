@@ -92,8 +92,11 @@ public class MainActivity extends ActionBarActivity
                 }
             };
     /*  mPhotoType = 0 --> Normal camera
-        mPhotoType = 1 --> BW camera
-        mPhotoType = 2 --> Normalice heist  */
+        mPhotoType = 1 --> CLAHE algorithm
+        mPhotoType = 2 --> equalize hist
+        mPhotoType = 3 --> Alien effect
+        mPhotoType = 4 --> Poster effect
+        mPhotoType = 5 --> Distorsion effect */
     private int mPhotoType = 0;
 
     // Suppress backward incompatibility errors because we provide
@@ -103,10 +106,13 @@ public class MainActivity extends ActionBarActivity
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        imageTypes.add("Normal");
-        imageTypes.add("BW");
-        imageTypes.add("Heist");
-        imageTypes.add("Contrast");
+        imageTypes.add(getResources().getString(R.string.menu_normal));
+        imageTypes.add(getResources().getString(R.string.menu_clahe));
+        imageTypes.add(getResources().getString(R.string.menu_heist));
+        imageTypes.add(getResources().getString(R.string.menu_alien));
+        imageTypes.add(getResources().getString(R.string.menu_poster));
+        imageTypes.add(getResources().getString(R.string.menu_distorsionB));
+        imageTypes.add(getResources().getString(R.string.menu_distorsionC));
 
         final Window window = getWindow();
         window.addFlags(
@@ -212,6 +218,21 @@ public class MainActivity extends ActionBarActivity
             imageSubMenu.add(MENU_GROUP_ID_TYPE, i, Menu.NONE, s);
             i++;
         }
+
+        final SubMenu barrilSubMenu = menu.addSubMenu(
+                R.string.menu_distorsionB);
+        for(i = 0; i< 10; i++)
+            barrilSubMenu.add(i);
+
+        final SubMenu cojinSubMenu = menu.addSubMenu(
+                R.string.menu_distorsionC);
+        for(i = 0; i< 10; i++)
+            cojinSubMenu.add(i);
+
+        final SubMenu CLAHESubMenu = menu.addSubMenu(
+                R.string.menu_clahe);
+        for(i = 0; i< 10; i++)
+            CLAHESubMenu.add(i);
         return true;
     }
 
@@ -232,10 +253,18 @@ public class MainActivity extends ActionBarActivity
         if (item.getGroupId() == MENU_GROUP_ID_TYPE) {
             if (item.getTitle().equals(getResources().getString(R.string.menu_normal)))
                 mPhotoType = 0;
-            if (item.getTitle().equals(getResources().getString(R.string.menu_contrast)))
+            if (item.getTitle().equals(getResources().getString(R.string.menu_clahe)))
                 mPhotoType = 1;
             if (item.getTitle().equals(getResources().getString(R.string.menu_heist)))
                 mPhotoType = 2;
+            if (item.getTitle().equals(getResources().getString(R.string.menu_alien)))
+                mPhotoType = 3;
+            if (item.getTitle().equals(getResources().getString(R.string.menu_poster)))
+                mPhotoType = 4;
+            if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionB)))
+                mPhotoType = 5;
+            if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionC)))
+                mPhotoType = 6;
             return true;
         }
         switch (item.getItemId()) {
@@ -272,8 +301,27 @@ public class MainActivity extends ActionBarActivity
 
     }
 
+    private Mat alien(Mat bgr){
+        return null;
+    }
+
+    private Mat poster(Mat bgr){
+        return null;
+    }
+
+    private Mat distorsionCojin(Mat bgr, int adjust){
+        return null;
+    }
+
+    private Mat distorsionBarril(Mat bgr, int adjust){
+        return null;
+    }
+
     /**
-     * This functions implements a histogram equalization with a limit in the contrast
+     * This functions implements a histogram equalization with a limit in the contrast.
+     * We have to use the color space Lab (L for light, a and b for the colours)
+     * in order to use CLAHE algorithm. the Algorithm will be applied to the channel L
+     * and the result will be merged with the rest of the colours of the image.
      *
      * @param bgr
      * @param limit
@@ -369,6 +417,22 @@ public class MainActivity extends ActionBarActivity
                 //HISTOGRAM EQUALIZATION
                 Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
                 mBgr = histEqual(mBgr);
+            case 3:
+                //ALIEN EFFECT
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                mBgr = alien(mBgr);
+            case 4:
+                //POSTER EFFECT
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                mBgr = poster(mBgr);
+            case 5:
+                //DISTORSION BARRIL EFFECT
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                mBgr = distorsionBarril(mBgr,-1);
+            case 6:
+                //DISTORSION COJIN EFFECT
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                mBgr = distorsionCojin(mBgr,-1);
         }
 
         if (!Imgcodecs.imwrite(photoPath, mBgr)) {
