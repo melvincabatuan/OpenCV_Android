@@ -222,8 +222,8 @@ public class MainActivity extends ActionBarActivity
             imageSubMenu.add(MENU_GROUP_ID_TYPE, i, Menu.NONE, s);
             i++;
         }
-
-        final SubMenu barrilSubMenu = menu.addSubMenu(
+        //SubMenu adjust = imageSubMenu.addSubMenu("Adjust");
+        /*final SubMenu barrilSubMenu = menu.addSubMenu(
                 R.string.menu_distorsionB);
         for(i = 0; i< 10; i++)
             barrilSubMenu.add(SMENU_ADJUST,i,Menu.NONE,i);
@@ -236,7 +236,7 @@ public class MainActivity extends ActionBarActivity
         final SubMenu CLAHESubMenu = menu.addSubMenu(
                 R.string.menu_clahe);
         for(i = 0; i< 10; i++)
-            CLAHESubMenu.add(SMENU_ADJUST,i,Menu.NONE,i);
+            CLAHESubMenu.add(SMENU_ADJUST,i,Menu.NONE,i);*/
         return true;
     }
 
@@ -257,23 +257,25 @@ public class MainActivity extends ActionBarActivity
         if (item.getGroupId() == MENU_GROUP_ID_TYPE) {
             if (item.getTitle().equals(getResources().getString(R.string.menu_normal)))
                 mPhotoType = 0;
-            if (item.getTitle().equals(getResources().getString(R.string.menu_clahe)))
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_clahe)))
                 mPhotoType = 1;
-            if (item.getTitle().equals(getResources().getString(R.string.menu_heist)))
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_heist)))
                 mPhotoType = 2;
-            if (item.getTitle().equals(getResources().getString(R.string.menu_alien)))
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_alien)))
                 mPhotoType = 3;
-            if (item.getTitle().equals(getResources().getString(R.string.menu_poster)))
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_poster)))
                 mPhotoType = 4;
-            if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionB)))
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionB)))
                 mPhotoType = 5;
-            if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionC)))
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionC)))
                 mPhotoType = 6;
+
             return true;
         }
-        if(item.getGroupId() == SMENU_ADJUST){
+        /*if(item.getGroupId() == SMENU_ADJUST){
             mAdjustLevel = item.getItemId();
-        }
+            return true;
+        }*/
         switch (item.getItemId()) {
             case R.id.menu_take_photo:
                 //Do not let to use the menu while taking a photo
@@ -344,7 +346,7 @@ public class MainActivity extends ActionBarActivity
             Imgproc.cvtColor(bgr, labImg, Imgproc.COLOR_BGR2Lab);
 
             Core.split(labImg, channels);
-            //Apply on the channel L
+            //Apply on the channel L (Light)
             cl.apply(channels.get(0), channels.get(0));
             Core.merge(channels, labImg);
 
@@ -372,11 +374,13 @@ public class MainActivity extends ActionBarActivity
 
             Imgproc.cvtColor(bgr, aux, Imgproc.COLOR_BGR2YCrCb);
             Core.split(aux, channels);
+            //Get channel Y, the one that represents the gray scale of the image
+            // we are going to equalize its histogram.
             Imgproc.equalizeHist(channels.get(0), channels.get(0));
             Core.merge(channels, aux);
-            Imgproc.cvtColor(aux, heistMat, Imgproc.COLOR_YCrCb2BGR, 3);
+            Imgproc.cvtColor(aux, heistMat, Imgproc.COLOR_YCrCb2BGR);
 
-            return aux;
+            return heistMat;
         } else
             return null;
     }
@@ -416,30 +420,33 @@ public class MainActivity extends ActionBarActivity
             case 0:
                 //NORMAL PHOTO
                 Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+                break;
             case 1:
                 //CLAHE - Contrast Limited AHE
                 Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
                 mBgr = clahe(mBgr, 2);
+                break;
             case 2:
                 //HISTOGRAM EQUALIZATION
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
                 mBgr = histEqual(mBgr);
+                break;
             case 3:
                 //ALIEN EFFECT
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                mBgr = alien(mBgr);
+                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                //mBgr = alien(mBgr);
             case 4:
                 //POSTER EFFECT
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                mBgr = poster(mBgr);
+                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                //mBgr = poster(mBgr);
             case 5:
                 //DISTORSION BARRIL EFFECT
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                mBgr = distorsionBarril(mBgr,-1);
+                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                //mBgr = distorsionBarril(mBgr,-1);
             case 6:
                 //DISTORSION COJIN EFFECT
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                mBgr = distorsionCojin(mBgr,-1);
+                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                //mBgr = distorsionCojin(mBgr,-1);
         }
 
         if (!Imgcodecs.imwrite(photoPath, mBgr)) {
