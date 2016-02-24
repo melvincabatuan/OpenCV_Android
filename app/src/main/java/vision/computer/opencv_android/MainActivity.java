@@ -58,6 +58,7 @@ public class MainActivity extends ActionBarActivity
     // An ID for items in the image size submenu.
     private static final int MENU_GROUP_ID_SIZE = 3;
     private static final int MENU_GROUP_ID_TYPE = 2;
+    private static final int SMENU_ADJUST = 4;
     ArrayList<String> imageTypes = new ArrayList<String>();
     // The index of the active camera.
     private int mCameraIndex;
@@ -75,6 +76,7 @@ public class MainActivity extends ActionBarActivity
     // If so, menu interaction should be disabled.
     private boolean mIsMenuLocked;
     // The OpenCV loader callback.
+
     private BaseLoaderCallback mLoaderCallback =
             new BaseLoaderCallback(this) {
                 @Override
@@ -98,6 +100,8 @@ public class MainActivity extends ActionBarActivity
         mPhotoType = 4 --> Poster effect
         mPhotoType = 5 --> Distorsion effect */
     private int mPhotoType = 0;
+
+    private int mAdjustLevel = -1;
 
     // Suppress backward incompatibility errors because we provide
     // backward-compatible fallbacks.
@@ -222,17 +226,17 @@ public class MainActivity extends ActionBarActivity
         final SubMenu barrilSubMenu = menu.addSubMenu(
                 R.string.menu_distorsionB);
         for(i = 0; i< 10; i++)
-            barrilSubMenu.add(i);
+            barrilSubMenu.add(SMENU_ADJUST,i,Menu.NONE,i);
 
         final SubMenu cojinSubMenu = menu.addSubMenu(
                 R.string.menu_distorsionC);
         for(i = 0; i< 10; i++)
-            cojinSubMenu.add(i);
+            cojinSubMenu.add(SMENU_ADJUST,i,Menu.NONE,i);
 
         final SubMenu CLAHESubMenu = menu.addSubMenu(
                 R.string.menu_clahe);
         for(i = 0; i< 10; i++)
-            CLAHESubMenu.add(i);
+            CLAHESubMenu.add(SMENU_ADJUST,i,Menu.NONE,i);
         return true;
     }
 
@@ -266,6 +270,9 @@ public class MainActivity extends ActionBarActivity
             if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionC)))
                 mPhotoType = 6;
             return true;
+        }
+        if(item.getGroupId() == SMENU_ADJUST){
+            mAdjustLevel = item.getItemId();
         }
         switch (item.getItemId()) {
             case R.id.menu_take_photo:
