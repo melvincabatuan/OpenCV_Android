@@ -32,6 +32,7 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.CLAHE;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
@@ -272,6 +273,30 @@ public class MainActivity extends ActionBarActivity
     }
 
     /**
+     * This functions implements a histogram equalization with a limit in the contrast
+     *
+     * @param bgr
+     * @param limit
+     * @return
+     */
+    private Mat clahe(Mat bgr, int limit) {
+        if (bgr.channels() >= 3) {
+            List<Mat> channels = new ArrayList<Mat>();
+            CLAHE cl = Imgproc.createCLAHE();
+
+            cl.setClipLimit(limit);
+            Core.split(bgr, channels);
+            for (Mat m : channels)
+                cl.apply(m, m);
+            Core.merge(channels, bgr);
+
+            return bgr;
+        } else
+            return null;
+
+    }
+
+    /**
      * This function equalize the histogram of a photo and return it. In BGR format.
      * It change its format to HSV, split in three channels equalize V, merge them
      * and re-format to BGR
@@ -292,8 +317,7 @@ public class MainActivity extends ActionBarActivity
             Imgproc.cvtColor(aux, heistMat, Imgproc.COLOR_YCrCb2BGR, 3);
 
             return aux;
-        }
-        else
+        } else
             return null;
     }
 
@@ -333,8 +357,9 @@ public class MainActivity extends ActionBarActivity
                 //NORMAL PHOTO
                 Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
             case 1:
-                //CONTRAST IMPROVEMENT?
+                //CLAHE - Contrast Limited AHE
                 Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+                mBgr = clahe(mBgr, 2);
             case 2:
                 //HISTOGRAM EQUALIZATION
                 Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
