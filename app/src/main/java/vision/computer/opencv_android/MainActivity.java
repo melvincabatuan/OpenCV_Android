@@ -281,14 +281,19 @@ public class MainActivity extends ActionBarActivity
      */
     private Mat clahe(Mat bgr, int limit) {
         if (bgr.channels() >= 3) {
+            Mat labImg = new Mat();
             List<Mat> channels = new ArrayList<Mat>();
             CLAHE cl = Imgproc.createCLAHE();
-
             cl.setClipLimit(limit);
-            Core.split(bgr, channels);
-            for (Mat m : channels)
-                cl.apply(m, m);
-            Core.merge(channels, bgr);
+
+            Imgproc.cvtColor(bgr, labImg, Imgproc.COLOR_BGR2Lab);
+
+            Core.split(labImg, channels);
+            //Apply on the channel L
+            cl.apply(channels.get(0), channels.get(0));
+            Core.merge(channels, labImg);
+
+            Imgproc.cvtColor(labImg, bgr, Imgproc.COLOR_Lab2BGR);
 
             return bgr;
         } else
