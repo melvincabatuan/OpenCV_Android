@@ -32,6 +32,7 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.CLAHE;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
@@ -56,34 +57,26 @@ public class MainActivity extends ActionBarActivity
 
     // An ID for items in the image size submenu.
     private static final int MENU_GROUP_ID_SIZE = 3;
-    private static final int MENU_CONTRAST = 2;
-    private static final int MENU_HEIST = 1;
-
+    private static final int MENU_GROUP_ID_TYPE = 2;
+    private static final int SMENU_ADJUST = 4;
+    ArrayList<String> imageTypes = new ArrayList<String>();
     // The index of the active camera.
     private int mCameraIndex;
-
     // The index of the active image size.
     private int mImageSizeIndex;
-
     // The image sizes supported by the active camera.
     private List<Size> mSupportedImageSizes;
-
     // The camera view.
     private CameraBridgeViewBase mCameraView;
-
     // Whether the next camera frame should be saved as a photo.
     private boolean mIsPhotoPending;
-
     // A matrix that is used when saving photos.
     private Mat mBgr;
-
     // Whether an asynchronous menu action is in progress.
     // If so, menu interaction should be disabled.
     private boolean mIsMenuLocked;
-
-    ArrayList<String> imageTypes = new ArrayList<String>();
-
     // The OpenCV loader callback.
+
     private BaseLoaderCallback mLoaderCallback =
             new BaseLoaderCallback(this) {
                 @Override
@@ -101,9 +94,14 @@ public class MainActivity extends ActionBarActivity
                 }
             };
     /*  mPhotoType = 0 --> Normal camera
-        mPhotoType = 1 --> BW camera
-        mPhotoType = 2 --> Normalice heist  */
+        mPhotoType = 1 --> CLAHE algorithm
+        mPhotoType = 2 --> equalize hist
+        mPhotoType = 3 --> Alien effect
+        mPhotoType = 4 --> Poster effect
+        mPhotoType = 5 --> Distorsion effect */
     private int mPhotoType = 0;
+
+    private int mAdjustLevel = -1;
 
     // Suppress backward incompatibility errors because we provide
     // backward-compatible fallbacks.
@@ -112,9 +110,13 @@ public class MainActivity extends ActionBarActivity
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        imageTypes.add("Normal");
-        imageTypes.add("Contrast");
-        imageTypes.add("Heist");
+        imageTypes.add(getResources().getString(R.string.menu_normal));
+        imageTypes.add(getResources().getString(R.string.menu_clahe));
+        imageTypes.add(getResources().getString(R.string.menu_heist));
+        imageTypes.add(getResources().getString(R.string.menu_alien));
+        imageTypes.add(getResources().getString(R.string.menu_poster));
+        imageTypes.add(getResources().getString(R.string.menu_distorsionB));
+        imageTypes.add(getResources().getString(R.string.menu_distorsionC));
 
         final Window window = getWindow();
         window.addFlags(
@@ -217,9 +219,24 @@ public class MainActivity extends ActionBarActivity
                 R.string.menu_image_type);
         int i = 0;
         for (String s : imageTypes) {
-            imageSubMenu.add(0, i, Menu.NONE, s);
+            imageSubMenu.add(MENU_GROUP_ID_TYPE, i, Menu.NONE, s);
             i++;
         }
+        //SubMenu adjust = imageSubMenu.addSubMenu("Adjust");
+        /*final SubMenu barrilSubMenu = menu.addSubMenu(
+                R.string.menu_distorsionB);
+        for(i = 0; i< 10; i++)
+            barrilSubMenu.add(SMENU_ADJUST,i,Menu.NONE,i);
+
+        final SubMenu cojinSubMenu = menu.addSubMenu(
+                R.string.menu_distorsionC);
+        for(i = 0; i< 10; i++)
+            cojinSubMenu.add(SMENU_ADJUST,i,Menu.NONE,i);
+
+        final SubMenu CLAHESubMenu = menu.addSubMenu(
+                R.string.menu_clahe);
+        for(i = 0; i< 10; i++)
+            CLAHESubMenu.add(SMENU_ADJUST,i,Menu.NONE,i);*/
         return true;
     }
 
@@ -237,7 +254,28 @@ public class MainActivity extends ActionBarActivity
             recreate();
             return true;
         }
+        if (item.getGroupId() == MENU_GROUP_ID_TYPE) {
+            if (item.getTitle().equals(getResources().getString(R.string.menu_normal)))
+                mPhotoType = 0;
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_clahe)))
+                mPhotoType = 1;
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_heist)))
+                mPhotoType = 2;
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_alien)))
+                mPhotoType = 3;
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_poster)))
+                mPhotoType = 4;
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionB)))
+                mPhotoType = 5;
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionC)))
+                mPhotoType = 6;
 
+            return true;
+        }
+        /*if(item.getGroupId() == SMENU_ADJUST){
+            mAdjustLevel = item.getItemId();
+            return true;
+        }*/
         switch (item.getItemId()) {
             case R.id.menu_take_photo:
                 //Do not let to use the menu while taking a photo
@@ -245,18 +283,6 @@ public class MainActivity extends ActionBarActivity
                 // FLAG Next frame, take the photo.
                 mIsPhotoPending = true;
 
-                return true;
-            case R.id.menu_contrast:
-                if (mPhotoType == 1)
-                    mPhotoType = 0;
-                else
-                    mPhotoType = 1;
-                return true;
-            case R.id.menu_heist:
-                if (mPhotoType == 2)
-                    mPhotoType = 0;
-                else
-                    mPhotoType = 2;
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -282,6 +308,81 @@ public class MainActivity extends ActionBarActivity
         }
         return rgba;
 
+    }
+
+    private Mat alien(Mat bgr){
+        return null;
+    }
+
+    private Mat poster(Mat bgr){
+        return null;
+    }
+
+    private Mat distorsionCojin(Mat bgr, int adjust){
+        return null;
+    }
+
+    private Mat distorsionBarril(Mat bgr, int adjust){
+        return null;
+    }
+
+    /**
+     * This functions implements a histogram equalization with a limit in the contrast.
+     * We have to use the color space Lab (L for light, a and b for the colours)
+     * in order to use CLAHE algorithm. the Algorithm will be applied to the channel L
+     * and the result will be merged with the rest of the colours of the image.
+     *
+     * @param bgr
+     * @param limit
+     * @return
+     */
+    private Mat clahe(Mat bgr, int limit) {
+        if (bgr.channels() >= 3) {
+            Mat labImg = new Mat();
+            List<Mat> channels = new ArrayList<Mat>();
+            CLAHE cl = Imgproc.createCLAHE();
+            cl.setClipLimit(limit);
+
+            Imgproc.cvtColor(bgr, labImg, Imgproc.COLOR_BGR2Lab);
+
+            Core.split(labImg, channels);
+            //Apply on the channel L (Light)
+            cl.apply(channels.get(0), channels.get(0));
+            Core.merge(channels, labImg);
+
+            Imgproc.cvtColor(labImg, bgr, Imgproc.COLOR_Lab2BGR);
+
+            return bgr;
+        } else
+            return null;
+
+    }
+
+    /**
+     * This function equalize the histogram of a photo and return it. In BGR format.
+     * It change its format to HSV, split in three channels equalize V, merge them
+     * and re-format to BGR
+     *
+     * @param bgr
+     * @return BGR equalized histogram
+     */
+    private Mat histEqual(Mat bgr) {
+        if (bgr.channels() >= 3) {
+            Mat aux = new Mat();
+            Mat heistMat = new Mat();
+            List<Mat> channels = new ArrayList<Mat>();
+
+            Imgproc.cvtColor(bgr, aux, Imgproc.COLOR_BGR2YCrCb);
+            Core.split(aux, channels);
+            //Get channel Y, the one that represents the gray scale of the image
+            // we are going to equalize its histogram.
+            Imgproc.equalizeHist(channels.get(0), channels.get(0));
+            Core.merge(channels, aux);
+            Imgproc.cvtColor(aux, heistMat, Imgproc.COLOR_YCrCb2BGR);
+
+            return heistMat;
+        } else
+            return null;
     }
 
     private void takePhoto(final Mat rgba) {
@@ -316,26 +417,37 @@ public class MainActivity extends ActionBarActivity
 
         Mat aux = new Mat();
         // Try to create the photo.
-        Imgproc.cvtColor(rgba, aux, Imgproc.COLOR_RGB2YCrCb);
-
-        if (mPhotoType != 0) {
-            Mat grayMat = new Mat();
-            Mat bwMat = new Mat();
-            Log.d("DEBUG","Llega");
-            int chann=rgba.channels();
-            Log.d("DEBUG","chan: "+chann);
-            List<Mat> channels = new ArrayList<>();
-            Core.split(aux, channels);
-
-            Imgproc.equalizeHist(channels.get(0), channels.get(0));
-
-            Core.merge(channels, aux);
-            Imgproc.cvtColor(aux,mBgr,Imgproc.COLOR_YCrCb2RGB);
-
-            if (mPhotoType == 1)
-                mBgr = bwMat;
-            if (mPhotoType == 2)
-                mBgr = grayMat;
+        switch (mPhotoType) {
+            case 0:
+                //NORMAL PHOTO
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+                break;
+            case 1:
+                //CLAHE - Contrast Limited AHE
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+                mBgr = clahe(mBgr, 2);
+                break;
+            case 2:
+                //HISTOGRAM EQUALIZATION
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+                mBgr = histEqual(mBgr);
+                break;
+            case 3:
+                //ALIEN EFFECT
+                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                //mBgr = alien(mBgr);
+            case 4:
+                //POSTER EFFECT
+                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                //mBgr = poster(mBgr);
+            case 5:
+                //DISTORSION BARRIL EFFECT
+                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                //mBgr = distorsionBarril(mBgr,-1);
+            case 6:
+                //DISTORSION COJIN EFFECT
+                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                //mBgr = distorsionCojin(mBgr,-1);
         }
 
         if (!Imgcodecs.imwrite(photoPath, mBgr)) {
