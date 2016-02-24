@@ -29,6 +29,7 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
@@ -313,17 +314,23 @@ public class MainActivity extends ActionBarActivity
             return;
         }
 
+        Mat aux = new Mat();
         // Try to create the photo.
-        Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+        Imgproc.cvtColor(rgba, aux, Imgproc.COLOR_RGB2YCrCb);
 
         if (mPhotoType != 0) {
             Mat grayMat = new Mat();
             Mat bwMat = new Mat();
+            Log.d("DEBUG","Llega");
+            int chann=rgba.channels();
+            Log.d("DEBUG","chan: "+chann);
+            List<Mat> channels = new ArrayList<>();
+            Core.split(aux, channels);
 
-            Imgproc.cvtColor(rgba, grayMat, Imgproc.COLOR_RGB2GRAY);
-            Imgproc.equalizeHist(grayMat, grayMat);
+            Imgproc.equalizeHist(channels.get(0), channels.get(0));
 
-            Imgproc.threshold(grayMat, bwMat, 127.5, 255.0, Imgproc.THRESH_OTSU);
+            Core.merge(channels, aux);
+            Imgproc.cvtColor(aux,mBgr,Imgproc.COLOR_YCrCb2RGB);
 
             if (mPhotoType == 1)
                 mBgr = bwMat;
