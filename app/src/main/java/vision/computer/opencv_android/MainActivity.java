@@ -57,31 +57,22 @@ public class MainActivity extends ActionBarActivity
     // An ID for items in the image size submenu.
     private static final int MENU_GROUP_ID_SIZE = 3;
     private static final int MENU_GROUP_ID_TYPE = 2;
-
+    ArrayList<String> imageTypes = new ArrayList<String>();
     // The index of the active camera.
     private int mCameraIndex;
-
     // The index of the active image size.
     private int mImageSizeIndex;
-
     // The image sizes supported by the active camera.
     private List<Size> mSupportedImageSizes;
-
     // The camera view.
     private CameraBridgeViewBase mCameraView;
-
     // Whether the next camera frame should be saved as a photo.
     private boolean mIsPhotoPending;
-
     // A matrix that is used when saving photos.
     private Mat mBgr;
-
     // Whether an asynchronous menu action is in progress.
     // If so, menu interaction should be disabled.
     private boolean mIsMenuLocked;
-
-    ArrayList<String> imageTypes = new ArrayList<String>();
-
     // The OpenCV loader callback.
     private BaseLoaderCallback mLoaderCallback =
             new BaseLoaderCallback(this) {
@@ -280,6 +271,28 @@ public class MainActivity extends ActionBarActivity
 
     }
 
+    /**
+     * This function equalize the histogram of a photo and return it. In BGR format.
+     * It change its format to HSV, split in three channels equalize V, merge them
+     * and re-format to BGR
+     *
+     * @param bgr
+     * @return BGR equalized histogram
+     */
+    private Mat histEqual(Mat bgr) {
+        Mat aux = new Mat();
+        Mat heistMat = new Mat();
+        List<Mat> channels = new ArrayList<Mat>();
+
+        Imgproc.cvtColor(bgr, aux, Imgproc.COLOR_BGR2YCrCb);
+        Core.split(aux, channels);
+        Imgproc.equalizeHist(channels.get(2), channels.get(2));
+        Core.merge(channels, aux);
+        Imgproc.cvtColor(aux, heistMat, Imgproc.COLOR_YCrCb2BGR, 3);
+
+        return aux;
+    }
+
     private void takePhoto(final Mat rgba) {
 
         // Determine the path and metadata for the photo.
@@ -309,24 +322,19 @@ public class MainActivity extends ActionBarActivity
             onTakePhotoFailed();
             return;
         }
-        Mat HSV;
 
         // Try to create the photo.
-        Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_BGR2YCrCb);
-
-        if (mPhotoType != 0) {
-            Mat heistMat = new Mat();
-            Mat bwMat = new Mat();
-
-            List<Mat> channels = new ArrayList<Mat>();
-            Core.split(mBgr, channels);
-            for(Mat m: channels)
-                Imgproc.equalizeHist(m, m);
-            Core.merge(channels, mBgr);
-            Imgproc.cvtColor(mBgr,heistMat,Imgproc.COLOR_YCrCb2BGR);
-
-            if (mPhotoType == 2)
-                mBgr = heistMat;
+        switch (mPhotoType) {
+            case 0:
+                //NORMAL PHOTO
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+            case 1:
+                //CONTRAST IMPROVEMENT?
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+            case 2:
+                //HISTOGRAM EQUALIZATION
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                mBgr = histEqual(mBgr);
         }
 
         if (!Imgcodecs.imwrite(photoPath, mBgr)) {
