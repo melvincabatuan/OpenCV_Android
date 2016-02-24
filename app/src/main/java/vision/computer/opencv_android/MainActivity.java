@@ -280,17 +280,21 @@ public class MainActivity extends ActionBarActivity
      * @return BGR equalized histogram
      */
     private Mat histEqual(Mat bgr) {
-        Mat aux = new Mat();
-        Mat heistMat = new Mat();
-        List<Mat> channels = new ArrayList<Mat>();
+        if (bgr.channels() >= 3) {
+            Mat aux = new Mat();
+            Mat heistMat = new Mat();
+            List<Mat> channels = new ArrayList<Mat>();
 
-        Imgproc.cvtColor(bgr, aux, Imgproc.COLOR_BGR2YCrCb);
-        Core.split(aux, channels);
-        Imgproc.equalizeHist(channels.get(2), channels.get(2));
-        Core.merge(channels, aux);
-        Imgproc.cvtColor(aux, heistMat, Imgproc.COLOR_YCrCb2BGR, 3);
+            Imgproc.cvtColor(bgr, aux, Imgproc.COLOR_BGR2YCrCb);
+            Core.split(aux, channels);
+            Imgproc.equalizeHist(channels.get(0), channels.get(0));
+            Core.merge(channels, aux);
+            Imgproc.cvtColor(aux, heistMat, Imgproc.COLOR_YCrCb2BGR, 3);
 
-        return aux;
+            return aux;
+        }
+        else
+            return null;
     }
 
     private void takePhoto(final Mat rgba) {
