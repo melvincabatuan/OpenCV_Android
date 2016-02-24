@@ -29,6 +29,7 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
@@ -111,8 +112,9 @@ public class MainActivity extends ActionBarActivity
         super.onCreate(savedInstanceState);
 
         imageTypes.add("Normal");
-        imageTypes.add("Contrast");
+        imageTypes.add("BW");
         imageTypes.add("Heist");
+        imageTypes.add("Contrast");
 
         final Window window = getWindow();
         window.addFlags(
@@ -215,7 +217,7 @@ public class MainActivity extends ActionBarActivity
                 R.string.menu_image_type);
         int i = 0;
         for (String s : imageTypes) {
-            imageSubMenu.add(0, i, Menu.NONE, s);
+            imageSubMenu.add(MENU_GROUP_ID_TYPE, i, Menu.NONE, s);
             i++;
         }
         return true;
@@ -235,34 +237,22 @@ public class MainActivity extends ActionBarActivity
             recreate();
             return true;
         }
-        if(item.getGroupId() == MENU_GROUP_ID_TYPE){
-           if(item.getTitle().equals(getResources().getString(R.string.menu_normal)))
-               mPhotoType = 0;
-            if(item.getTitle().equals(getResources().getString(R.string.menu_contrast)))
+        if (item.getGroupId() == MENU_GROUP_ID_TYPE) {
+            if (item.getTitle().equals(getResources().getString(R.string.menu_normal)))
+                mPhotoType = 0;
+            if (item.getTitle().equals(getResources().getString(R.string.menu_contrast)))
                 mPhotoType = 1;
-            if(item.getTitle().equals(getResources().getString(R.string.menu_heist)))
+            if (item.getTitle().equals(getResources().getString(R.string.menu_heist)))
                 mPhotoType = 2;
-
+            return true;
         }
         switch (item.getItemId()) {
-            case 0:
+            case R.id.menu_take_photo:
                 //Do not let to use the menu while taking a photo
                 mIsMenuLocked = true;
                 // FLAG Next frame, take the photo.
                 mIsPhotoPending = true;
 
-                return true;
-            case 1:
-                if (mPhotoType == 1)
-                    mPhotoType = 0;
-                else
-                    mPhotoType = 1;
-                return true;
-            case 2:
-                if (mPhotoType == 2)
-                    mPhotoType = 0;
-                else
-                    mPhotoType = 2;
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -319,23 +309,24 @@ public class MainActivity extends ActionBarActivity
             onTakePhotoFailed();
             return;
         }
+        Mat HSV;
 
         // Try to create the photo.
-        Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+        Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_BGR2YCrCb);
 
         if (mPhotoType != 0) {
-            Mat grayMat = new Mat();
+            Mat heistMat = new Mat();
             Mat bwMat = new Mat();
 
-            Imgproc.cvtColor(rgba, grayMat, Imgproc.COLOR_RGB2GRAY);
-            Imgproc.equalizeHist(grayMat, grayMat);
+            List<Mat> channels = new ArrayList<Mat>();
+            Core.split(mBgr, channels);
+            for(Mat m: channels)
+                Imgproc.equalizeHist(m, m);
+            Core.merge(channels, mBgr);
+            Imgproc.cvtColor(mBgr,heistMat,Imgproc.COLOR_YCrCb2BGR);
 
-            Imgproc.threshold(grayMat, bwMat, 127.5, 255.0, Imgproc.THRESH_OTSU);
-
-            if (mPhotoType == 1)
-                mBgr = bwMat;
             if (mPhotoType == 2)
-                mBgr = grayMat;
+                mBgr = heistMat;
         }
 
         if (!Imgcodecs.imwrite(photoPath, mBgr)) {
