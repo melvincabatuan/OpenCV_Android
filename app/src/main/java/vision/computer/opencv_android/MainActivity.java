@@ -157,6 +157,7 @@ public class MainActivity extends ActionBarActivity
         imageTypes.add(getResources().getString(R.string.menu_heist));
         imageTypes.add(getResources().getString(R.string.menu_alien));
         imageTypes.add(getResources().getString(R.string.menu_poster));
+        imageTypes.add(getResources().getString(R.string.menu_posterContrast));
         imageTypes.add(getResources().getString(R.string.menu_distorsionB));
         imageTypes.add(getResources().getString(R.string.menu_distorsionC));
 
@@ -185,6 +186,7 @@ public class MainActivity extends ActionBarActivity
         camera.release();
         mSupportedImageSizes =
                 parameters.getSupportedPreviewSizes();
+        mImageSizeIndex = mSupportedImageSizes.size()-1;
         final Size size = mSupportedImageSizes.get(mImageSizeIndex);
 
         mCameraView = new JavaCameraView(this, mCameraIndex);
@@ -307,10 +309,12 @@ public class MainActivity extends ActionBarActivity
                 mPhotoType = 3;
             else if (item.getTitle().equals(getResources().getString(R.string.menu_poster)))
                 mPhotoType = 4;
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionB)))
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_posterContrast)))
                 mPhotoType = 5;
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionC)))
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionB)))
                 mPhotoType = 6;
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionC)))
+                mPhotoType = 7;
 
             return true;
         }
@@ -367,14 +371,20 @@ public class MainActivity extends ActionBarActivity
                 //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
                 //mBgr = alien(mBgr);
             case 4:
-                //POSTER EFFECT
+                //POSTER EFFECT COLOR
                 Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                mBgr = poster(mBgr, 10);
+                mBgr = poster(mBgr,10);
+                break;
             case 5:
+                //POSTER EFFECT CONTRAST
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                mBgr = poster2(mBgr);
+                break;
+            case 6:
                 //DISTORSION BARRIL EFFECT
                 //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
                 //mBgr = distorsionBarril(mBgr,-1);
-            case 6:
+            case 7:
                 //DISTORSION COJIN EFFECT
                 //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
                 //mBgr = distorsionCojin(mBgr,-1);
@@ -484,8 +494,24 @@ public class MainActivity extends ActionBarActivity
         return dst;
     }
 
+    private Mat poster2(Mat bgr) {
+        for (int i = 0; i < bgr.cols(); i++) {
+            for (int j = 0; j < bgr.rows(); j++) {
+                double[] pixel = bgr.get(j, i);
+                for (int c = 0; c < bgr.channels(); c++) {
+                    if (pixel[c] > 127)
+                        pixel[c] = 255;
+                    else
+                        pixel[c] = 0;
+                }
+                bgr.put(j, i, pixel);
+            }
+        }
+        return bgr;
+    }
+
     private Mat poster(Mat bgr, int size) {
-        org.opencv.core.Size  ksize = new org.opencv.core.Size(size, size);
+        org.opencv.core.Size ksize = new org.opencv.core.Size(size, size);
         Mat MorphKernel = Imgproc.getStructuringElement(Imgproc.MORPH_CROSS, ksize);
         Imgproc.morphologyEx(bgr, bgr, Imgproc.MORPH_RECT, MorphKernel);
         return bgr;
