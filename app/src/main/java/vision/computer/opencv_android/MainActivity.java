@@ -114,8 +114,8 @@ public class MainActivity extends ActionBarActivity
 
     private int mAdjustLevel = -1;
 
-    private void initializeOpenCVDependencies(){
-        try{
+    private void initializeOpenCVDependencies() {
+        try {
             // Copy the resource into a temp file so OpenCV can load it
             InputStream is = getResources().openRawResource(R.raw.lbpcascade_frontalface);
             File cascadeDir = getDir("cascade", Context.MODE_PRIVATE);
@@ -133,7 +133,7 @@ public class MainActivity extends ActionBarActivity
             // Load the cascade classifier
             //cascadeClassifier = new CascadeClassifier(mCascadeFile.getAbsolutePath());
             cascadeClassifier.load(mCascadeFile.getAbsolutePath());
-            if(cascadeClassifier.empty()){
+            if (cascadeClassifier.empty()) {
                 throw new RuntimeException("CASCADE EMPTY");
             }
         } catch (Exception e) {
@@ -144,6 +144,7 @@ public class MainActivity extends ActionBarActivity
         mCameraView.enableView();
         mBgr = new Mat();
     }
+
     // Suppress backward incompatibility errors because we provide
     // backward-compatible fallbacks.
     @SuppressLint("NewApi")
@@ -367,8 +368,8 @@ public class MainActivity extends ActionBarActivity
                 //mBgr = alien(mBgr);
             case 4:
                 //POSTER EFFECT
-                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                //mBgr = poster(mBgr);
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                mBgr = poster(mBgr, 10);
             case 5:
                 //DISTORSION BARRIL EFFECT
                 //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
@@ -378,7 +379,7 @@ public class MainActivity extends ActionBarActivity
                 //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
                 //mBgr = distorsionCojin(mBgr,-1);
         }
-        Imgproc.cvtColor(mBgr,rgba,Imgproc.COLOR_BGR2RGBA);
+        Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA);
 
         if (mIsPhotoPending) {
             mIsPhotoPending = false;
@@ -387,7 +388,7 @@ public class MainActivity extends ActionBarActivity
         return rgba;
     }
 
-    private Mat alien(Mat bgr){
+    private Mat alien(Mat bgr) {
         Imgproc.cvtColor(bgr, grayscaleImage, Imgproc.COLOR_RGBA2RGB);
         MatOfRect faces = new MatOfRect();
 
@@ -399,28 +400,28 @@ public class MainActivity extends ActionBarActivity
 
         // If there are any faces found, draw a rectangle around it
         Rect[] facesArray = faces.toArray();
-        for (int i = 0; i <facesArray.length; i++)
+        for (int i = 0; i < facesArray.length; i++)
             Imgproc.rectangle(bgr, facesArray[i].tl(), facesArray[i].br(), new Scalar(0, 255, 0, 255), 3);
         return bgr;
     }
 
     public boolean R1(int R, int G, int B) {
-        boolean e1 = (R>95) && (G>40) && (B>20) && ((Math.max(R,Math.max(G,B)) - Math.min(R, Math.min(G,B)))>15) && (Math.abs(R - G)>15) && (R>G) && (R>B);
-        boolean e2 = (R>220) && (G>210) && (B>170) && (Math.abs(R - G)<=15) && (R>B) && (G>B);
-        return (e1||e2);
+        boolean e1 = (R > 95) && (G > 40) && (B > 20) && ((Math.max(R, Math.max(G, B)) - Math.min(R, Math.min(G, B))) > 15) && (Math.abs(R - G) > 15) && (R > G) && (R > B);
+        boolean e2 = (R > 220) && (G > 210) && (B > 170) && (Math.abs(R - G) <= 15) && (R > B) && (G > B);
+        return (e1 || e2);
     }
 
     public boolean R2(float Y, float Cr, float Cb) {
-        boolean e3 = Cr <= 1.5862*Cb+20;
-        boolean e4 = Cr >= 0.3448*Cb+76.2069;
-        boolean e5 = Cr >= -4.5652*Cb+234.5652;
-        boolean e6 = Cr <= -1.15*Cb+301.75;
-        boolean e7 = Cr <= -2.2857*Cb+432.85;
+        boolean e3 = Cr <= 1.5862 * Cb + 20;
+        boolean e4 = Cr >= 0.3448 * Cb + 76.2069;
+        boolean e5 = Cr >= -4.5652 * Cb + 234.5652;
+        boolean e6 = Cr <= -1.15 * Cb + 301.75;
+        boolean e7 = Cr <= -2.2857 * Cb + 432.85;
         return e3 && e4 && e5 && e6 && e7;
     }
 
     boolean R3(float H, float S, float V) {
-        return (H<25) || (H > 230);
+        return (H < 25) || (H > 230);
     }
 
     public Mat getSkin(Mat src) {
@@ -428,18 +429,18 @@ public class MainActivity extends ActionBarActivity
         Mat dst = src.clone();
 
         byte[] cwhite = new byte[4];
-        cwhite[0]=Byte.MAX_VALUE;
-        cwhite[1]=Byte.MAX_VALUE;
-        cwhite[2]=Byte.MAX_VALUE;
-        cwhite[3]=Byte.MAX_VALUE;
+        cwhite[0] = Byte.MAX_VALUE;
+        cwhite[1] = Byte.MAX_VALUE;
+        cwhite[2] = Byte.MAX_VALUE;
+        cwhite[3] = Byte.MAX_VALUE;
         byte[] cblack = new byte[4];
-        cblack[0]=Byte.MIN_VALUE;
-        cblack[1]=Byte.MIN_VALUE;
-        cblack[2]=Byte.MIN_VALUE;
-        cblack[3]=Byte.MIN_VALUE;
+        cblack[0] = Byte.MIN_VALUE;
+        cblack[1] = Byte.MIN_VALUE;
+        cblack[2] = Byte.MIN_VALUE;
+        cblack[3] = Byte.MIN_VALUE;
 
 
-        Mat src_ycrcb= new Mat(), src_hsv = new Mat();
+        Mat src_ycrcb = new Mat(), src_hsv = new Mat();
         // OpenCV scales the YCrCb components, so that they
         // cover the whole value range of [0,255], so there's
         // no need to scale the values:
@@ -449,48 +450,52 @@ public class MainActivity extends ActionBarActivity
         // the full spectrum from [0,360] by using floating
         // point precision:
         src.convertTo(src_hsv, CvType.CV_32FC3);
-        Imgproc.cvtColor(src_hsv, src_hsv,Imgproc.COLOR_BGR2HSV);
+        Imgproc.cvtColor(src_hsv, src_hsv, Imgproc.COLOR_BGR2HSV);
         // Now scale the values between [0,255]:
         Core.normalize(src_hsv, src_hsv, 0.0, 255.0, Core.NORM_MINMAX, CvType.CV_32FC3);
 
-        for(int i = 0; i < src.rows(); i++) {
-            for(int j = 0; j < src.cols(); j++) {
-                double[] pix_bgr = src.get(i,j);
+        for (int i = 0; i < src.rows(); i++) {
+            for (int j = 0; j < src.cols(); j++) {
+                double[] pix_bgr = src.get(i, j);
                 double B = pix_bgr[0];
                 double G = pix_bgr[1];
                 double R = pix_bgr[2];
                 // apply rgb rules
                 boolean a = R1((int) R, (int) G, (int) B);
 
-                double[] pix_ycrcb = src_ycrcb.get(i,j);
+                double[] pix_ycrcb = src_ycrcb.get(i, j);
                 double Y = pix_ycrcb[0];
                 double Cr = pix_ycrcb[1];
                 double Cb = pix_ycrcb[2];
                 // apply ycrcb rule
-                boolean b = R2((int)Y,(int)Cr,(int)Cb);
+                boolean b = R2((int) Y, (int) Cr, (int) Cb);
 
-                double[] pix_hsv = src_hsv.get(i,j);
+                double[] pix_hsv = src_hsv.get(i, j);
                 float H = (float) pix_hsv[0];
                 float S = (float) pix_hsv[1];
                 float V = (float) pix_hsv[2];
                 // apply hsv rule
-                boolean c = R3(H,S,V);
+                boolean c = R3(H, S, V);
 
-                if(!(a&&b&&c))
-                    dst.put(i,j,cblack);
+                if (!(a && b && c))
+                    dst.put(i, j, cblack);
             }
         }
         return dst;
     }
-    private Mat poster(Mat bgr){
+
+    private Mat poster(Mat bgr, int size) {
+        org.opencv.core.Size  ksize = new org.opencv.core.Size(size, size);
+        Mat MorphKernel = Imgproc.getStructuringElement(Imgproc.MORPH_CROSS, ksize);
+        Imgproc.morphologyEx(bgr, bgr, Imgproc.MORPH_RECT, MorphKernel);
+        return bgr;
+    }
+
+    private Mat distorsionCojin(Mat bgr, int adjust) {
         return null;
     }
 
-    private Mat distorsionCojin(Mat bgr, int adjust){
-        return null;
-    }
-
-    private Mat distorsionBarril(Mat bgr, int adjust){
+    private Mat distorsionBarril(Mat bgr, int adjust) {
         return null;
     }
 
