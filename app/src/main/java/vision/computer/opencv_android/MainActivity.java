@@ -2,6 +2,7 @@ package vision.computer.opencv_android;
 
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
@@ -30,12 +31,19 @@ import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Core;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfRect;
+import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.CLAHE;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.CascadeClassifier;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -77,6 +85,10 @@ public class MainActivity extends ActionBarActivity
     private boolean mIsMenuLocked;
     // The OpenCV loader callback.
 
+    private CascadeClassifier cascadeClassifier;
+    private Mat grayscaleImage;
+    private int absoluteFaceSize;
+
     private BaseLoaderCallback mLoaderCallback =
             new BaseLoaderCallback(this) {
                 @Override
@@ -84,8 +96,7 @@ public class MainActivity extends ActionBarActivity
                     switch (status) {
                         case LoaderCallbackInterface.SUCCESS:
                             Log.d(TAG, "OpenCV loaded successfully");
-                            mCameraView.enableView();
-                            mBgr = new Mat();
+                            initializeOpenCVDependencies();
                             break;
                         default:
                             super.onManagerConnected(status);
@@ -103,6 +114,36 @@ public class MainActivity extends ActionBarActivity
 
     private int mAdjustLevel = -1;
 
+    private void initializeOpenCVDependencies(){
+        try{
+            // Copy the resource into a temp file so OpenCV can load it
+            InputStream is = getResources().openRawResource(R.raw.lbpcascade_frontalface);
+            File cascadeDir = getDir("cascade", Context.MODE_PRIVATE);
+            File mCascadeFile = new File(cascadeDir, "lbpcascade_frontalface.xml");
+            FileOutputStream os = new FileOutputStream(mCascadeFile);
+
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = is.read(buffer)) != -1) {
+                os.write(buffer, 0, bytesRead);
+            }
+            is.close();
+            os.close();
+
+            // Load the cascade classifier
+            //cascadeClassifier = new CascadeClassifier(mCascadeFile.getAbsolutePath());
+            cascadeClassifier.load(mCascadeFile.getAbsolutePath());
+            if(cascadeClassifier.empty()){
+                throw new RuntimeException("CASCADE EMPTY");
+            }
+        } catch (Exception e) {
+            Log.e("OpenCVActivity", "Error loading cascade", e);
+        }
+
+        // And we are ready to go
+        mCameraView.enableView();
+        mBgr = new Mat();
+    }
     // Suppress backward incompatibility errors because we provide
     // backward-compatible fallbacks.
     @SuppressLint("NewApi")
@@ -292,6 +333,9 @@ public class MainActivity extends ActionBarActivity
     @Override
     public void onCameraViewStarted(final int width,
                                     final int height) {
+        grayscaleImage = new Mat(height, width, CvType.CV_8UC4);
+        // The faces will be a 20% of the height of the screen
+        absoluteFaceSize = (int) (height * 0.2);
     }
 
     @Override
@@ -344,9 +388,100 @@ public class MainActivity extends ActionBarActivity
     }
 
     private Mat alien(Mat bgr){
-        return null;
+        Imgproc.cvtColor(bgr, grayscaleImage, Imgproc.COLOR_RGBA2RGB);
+        MatOfRect faces = new MatOfRect();
+
+
+        // Use the classifier to detect faces
+        if (cascadeClassifier != null) {
+            cascadeClassifier.detectMultiScale(grayscaleImage, faces, 1.1, 2, 2, new org.opencv.core.Size(absoluteFaceSize, absoluteFaceSize), new org.opencv.core.Size());
+        }
+
+        // If there are any faces found, draw a rectangle around it
+        Rect[] facesArray = faces.toArray();
+        for (int i = 0; i <facesArray.length; i++)
+            Imgproc.rectangle(bgr, facesArray[i].tl(), facesArray[i].br(), new Scalar(0, 255, 0, 255), 3);
+        return bgr;
     }
 
+    public boolean R1(int R, int G, int B) {
+        boolean e1 = (R>95) && (G>40) && (B>20) && ((Math.max(R,Math.max(G,B)) - Math.min(R, Math.min(G,B)))>15) && (Math.abs(R - G)>15) && (R>G) && (R>B);
+        boolean e2 = (R>220) && (G>210) && (B>170) && (Math.abs(R - G)<=15) && (R>B) && (G>B);
+        return (e1||e2);
+    }
+
+    public boolean R2(float Y, float Cr, float Cb) {
+        boolean e3 = Cr <= 1.5862*Cb+20;
+        boolean e4 = Cr >= 0.3448*Cb+76.2069;
+        boolean e5 = Cr >= -4.5652*Cb+234.5652;
+        boolean e6 = Cr <= -1.15*Cb+301.75;
+        boolean e7 = Cr <= -2.2857*Cb+432.85;
+        return e3 && e4 && e5 && e6 && e7;
+    }
+
+    boolean R3(float H, float S, float V) {
+        return (H<25) || (H > 230);
+    }
+
+    public Mat getSkin(Mat src) {
+        // allocate the result matrix
+        Mat dst = src.clone();
+
+        byte[] cwhite = new byte[4];
+        cwhite[0]=Byte.MAX_VALUE;
+        cwhite[1]=Byte.MAX_VALUE;
+        cwhite[2]=Byte.MAX_VALUE;
+        cwhite[3]=Byte.MAX_VALUE;
+        byte[] cblack = new byte[4];
+        cblack[0]=Byte.MIN_VALUE;
+        cblack[1]=Byte.MIN_VALUE;
+        cblack[2]=Byte.MIN_VALUE;
+        cblack[3]=Byte.MIN_VALUE;
+
+
+        Mat src_ycrcb= new Mat(), src_hsv = new Mat();
+        // OpenCV scales the YCrCb components, so that they
+        // cover the whole value range of [0,255], so there's
+        // no need to scale the values:
+        Imgproc.cvtColor(src, src_ycrcb, Imgproc.COLOR_BGR2YCrCb);
+        // OpenCV scales the Hue Channel to [0,180] for
+        // 8bit images, so make sure we are operating on
+        // the full spectrum from [0,360] by using floating
+        // point precision:
+        src.convertTo(src_hsv, CvType.CV_32FC3);
+        Imgproc.cvtColor(src_hsv, src_hsv,Imgproc.COLOR_BGR2HSV);
+        // Now scale the values between [0,255]:
+        Core.normalize(src_hsv, src_hsv, 0.0, 255.0, Core.NORM_MINMAX, CvType.CV_32FC3);
+
+        for(int i = 0; i < src.rows(); i++) {
+            for(int j = 0; j < src.cols(); j++) {
+                double[] pix_bgr = src.get(i,j);
+                double B = pix_bgr[0];
+                double G = pix_bgr[1];
+                double R = pix_bgr[2];
+                // apply rgb rules
+                boolean a = R1((int) R, (int) G, (int) B);
+
+                double[] pix_ycrcb = src_ycrcb.get(i,j);
+                double Y = pix_ycrcb[0];
+                double Cr = pix_ycrcb[1];
+                double Cb = pix_ycrcb[2];
+                // apply ycrcb rule
+                boolean b = R2((int)Y,(int)Cr,(int)Cb);
+
+                double[] pix_hsv = src_hsv.get(i,j);
+                float H = (float) pix_hsv[0];
+                float S = (float) pix_hsv[1];
+                float V = (float) pix_hsv[2];
+                // apply hsv rule
+                boolean c = R3(H,S,V);
+
+                if(!(a&&b&&c))
+                    dst.put(i,j,cblack);
+            }
+        }
+        return dst;
+    }
     private Mat poster(Mat bgr){
         return null;
     }
@@ -447,7 +582,7 @@ public class MainActivity extends ActionBarActivity
             onTakePhotoFailed();
             return;
         }
-        
+
         if (!Imgcodecs.imwrite(photoPath, mBgr)) {
             Log.e(TAG, "Failed to save photo to " + photoPath);
             onTakePhotoFailed();
