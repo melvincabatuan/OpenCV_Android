@@ -302,12 +302,45 @@ public class MainActivity extends ActionBarActivity
     public Mat onCameraFrame(final CvCameraViewFrame inputFrame) {
         final Mat rgba = inputFrame.rgba();
 
+        switch (mPhotoType) {
+            case 0:
+                //NORMAL PHOTO
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+                break;
+            case 1:
+                //CLAHE - Contrast Limited AHE
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+                mBgr = clahe(mBgr, 2);
+                break;
+            case 2:
+                //HISTOGRAM EQUALIZATION
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+                mBgr = histEqual(mBgr);
+                break;
+            case 3:
+                //ALIEN EFFECT
+                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                //mBgr = alien(mBgr);
+            case 4:
+                //POSTER EFFECT
+                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                //mBgr = poster(mBgr);
+            case 5:
+                //DISTORSION BARRIL EFFECT
+                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                //mBgr = distorsionBarril(mBgr,-1);
+            case 6:
+                //DISTORSION COJIN EFFECT
+                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                //mBgr = distorsionCojin(mBgr,-1);
+        }
+        Imgproc.cvtColor(mBgr,rgba,Imgproc.COLOR_BGR2RGBA);
+
         if (mIsPhotoPending) {
             mIsPhotoPending = false;
-            takePhoto(rgba);
+            takePhoto();
         }
         return rgba;
-
     }
 
     private Mat alien(Mat bgr){
@@ -385,7 +418,7 @@ public class MainActivity extends ActionBarActivity
             return null;
     }
 
-    private void takePhoto(final Mat rgba) {
+    private void takePhoto() {
 
         // Determine the path and metadata for the photo.
         final long currentTimeMillis = System.currentTimeMillis();
@@ -414,41 +447,7 @@ public class MainActivity extends ActionBarActivity
             onTakePhotoFailed();
             return;
         }
-
-        // Try to create the photo.
-        switch (mPhotoType) {
-            case 0:
-                //NORMAL PHOTO
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
-                break;
-            case 1:
-                //CLAHE - Contrast Limited AHE
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
-                mBgr = clahe(mBgr, 2);
-                break;
-            case 2:
-                //HISTOGRAM EQUALIZATION
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
-                mBgr = histEqual(mBgr);
-                break;
-            case 3:
-                //ALIEN EFFECT
-                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                //mBgr = alien(mBgr);
-            case 4:
-                //POSTER EFFECT
-                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                //mBgr = poster(mBgr);
-            case 5:
-                //DISTORSION BARRIL EFFECT
-                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                //mBgr = distorsionBarril(mBgr,-1);
-            case 6:
-                //DISTORSION COJIN EFFECT
-                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                //mBgr = distorsionCojin(mBgr,-1);
-        }
-
+        
         if (!Imgcodecs.imwrite(photoPath, mBgr)) {
             Log.e(TAG, "Failed to save photo to " + photoPath);
             onTakePhotoFailed();
