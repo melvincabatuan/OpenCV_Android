@@ -114,8 +114,8 @@ public class MainActivity extends ActionBarActivity
 
     private int mAdjustLevel = -1;
 
-    private void initializeOpenCVDependencies(){
-        try{
+    private void initializeOpenCVDependencies() {
+        try {
             // Copy the resource into a temp file so OpenCV can load it
             InputStream is = getResources().openRawResource(R.raw.lbpcascade_frontalface);
             File cascadeDir = getDir("cascade", Context.MODE_PRIVATE);
@@ -132,8 +132,7 @@ public class MainActivity extends ActionBarActivity
 
             // Load the cascade classifier
             cascadeClassifier = new CascadeClassifier("android.resource://OpenCV_Android/app/src/main/raw/haarcascade_frontalface_alt.xml");
-            if(cascadeClassifier.empty()){
-                Log.i(TAG, "Loaded cascade classifier from " + mCascadeFile.getAbsolutePath());
+            if (cascadeClassifier.empty()) {
                 throw new RuntimeException("CASCADE EMPTY");
             }
         } catch (Exception e) {
@@ -144,6 +143,7 @@ public class MainActivity extends ActionBarActivity
         mCameraView.enableView();
         mBgr = new Mat();
     }
+
     // Suppress backward incompatibility errors because we provide
     // backward-compatible fallbacks.
     @SuppressLint("NewApi")
@@ -156,6 +156,7 @@ public class MainActivity extends ActionBarActivity
         imageTypes.add(getResources().getString(R.string.menu_heist));
         imageTypes.add(getResources().getString(R.string.menu_alien));
         imageTypes.add(getResources().getString(R.string.menu_poster));
+        imageTypes.add(getResources().getString(R.string.menu_posterContrast));
         imageTypes.add(getResources().getString(R.string.menu_distorsionB));
         imageTypes.add(getResources().getString(R.string.menu_distorsionC));
 
@@ -184,6 +185,7 @@ public class MainActivity extends ActionBarActivity
         camera.release();
         mSupportedImageSizes =
                 parameters.getSupportedPreviewSizes();
+        mImageSizeIndex = mSupportedImageSizes.size()-1;
         final Size size = mSupportedImageSizes.get(mImageSizeIndex);
 
         mCameraView = new JavaCameraView(this, mCameraIndex);
@@ -306,10 +308,12 @@ public class MainActivity extends ActionBarActivity
                 mPhotoType = 3;
             else if (item.getTitle().equals(getResources().getString(R.string.menu_poster)))
                 mPhotoType = 4;
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionB)))
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_posterContrast)))
                 mPhotoType = 5;
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionC)))
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionB)))
                 mPhotoType = 6;
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionC)))
+                mPhotoType = 7;
 
             return true;
         }
@@ -346,15 +350,10 @@ public class MainActivity extends ActionBarActivity
     public Mat onCameraFrame(final CvCameraViewFrame inputFrame) {
         final Mat rgba = inputFrame.rgba();
 
-        if (mIsPhotoPending) {
-            mIsPhotoPending = false;
-            takePhoto(rgba);
-        }
         switch (mPhotoType) {
             case 0:
                 //NORMAL PHOTO
-                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
-                mBgr=rgba;
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
                 break;
             case 1:
                 //CLAHE - Contrast Limited AHE
@@ -379,28 +378,37 @@ public class MainActivity extends ActionBarActivity
                 Scalar upper=new Scalar(25,scaleSatUpper*255,255);
                 Core.inRange(hsv,lower,upper,res);
                 Imgproc.cvtColor(res, mBgr, Imgproc.COLOR_HSV2BGR);*/
-
-
-
                 mBgr= getSkin(rgba);
+                break;
             case 4:
-                //POSTER EFFECT
-                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                //mBgr = poster(mBgr);
+                //POSTER EFFECT COLOR
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                mBgr = poster(mBgr,10);
+                break;
             case 5:
+                //POSTER EFFECT CONTRAST
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                mBgr = poster2(mBgr);
+                break;
+            case 6:
                 //DISTORSION BARRIL EFFECT
                 //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
                 //mBgr = distorsionBarril(mBgr,-1);
-            case 6:
+            case 7:
                 //DISTORSION COJIN EFFECT
                 //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
                 //mBgr = distorsionCojin(mBgr,-1);
         }
-        return mBgr;
+        Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA);
 
+        if (mIsPhotoPending) {
+            mIsPhotoPending = false;
+            takePhoto();
+        }
+        return rgba;
     }
 
-    private Mat alien(Mat bgr){
+    private Mat alien(Mat bgr) {
         Imgproc.cvtColor(bgr, grayscaleImage, Imgproc.COLOR_RGBA2RGB);
         MatOfRect faces = new MatOfRect();
 
@@ -412,28 +420,28 @@ public class MainActivity extends ActionBarActivity
 
         // If there are any faces found, draw a rectangle around it
         Rect[] facesArray = faces.toArray();
-        for (int i = 0; i <facesArray.length; i++)
+        for (int i = 0; i < facesArray.length; i++)
             Imgproc.rectangle(bgr, facesArray[i].tl(), facesArray[i].br(), new Scalar(0, 255, 0, 255), 3);
         return bgr;
     }
 
     public boolean R1(int R, int G, int B) {
-        boolean e1 = (R>95) && (G>40) && (B>20) && ((Math.max(R,Math.max(G,B)) - Math.min(R, Math.min(G,B)))>15) && (Math.abs(R - G)>15) && (R>G) && (R>B);
-        boolean e2 = (R>220) && (G>210) && (B>170) && (Math.abs(R - G)<=15) && (R>B) && (G>B);
-        return (e1||e2);
+        boolean e1 = (R > 95) && (G > 40) && (B > 20) && ((Math.max(R, Math.max(G, B)) - Math.min(R, Math.min(G, B))) > 15) && (Math.abs(R - G) > 15) && (R > G) && (R > B);
+        boolean e2 = (R > 220) && (G > 210) && (B > 170) && (Math.abs(R - G) <= 15) && (R > B) && (G > B);
+        return (e1 || e2);
     }
 
     public boolean R2(float Y, float Cr, float Cb) {
-        boolean e3 = Cr <= 1.5862*Cb+20;
-        boolean e4 = Cr >= 0.3448*Cb+76.2069;
-        boolean e5 = Cr >= -4.5652*Cb+234.5652;
-        boolean e6 = Cr <= -1.15*Cb+301.75;
-        boolean e7 = Cr <= -2.2857*Cb+432.85;
+        boolean e3 = Cr <= 1.5862 * Cb + 20;
+        boolean e4 = Cr >= 0.3448 * Cb + 76.2069;
+        boolean e5 = Cr >= -4.5652 * Cb + 234.5652;
+        boolean e6 = Cr <= -1.15 * Cb + 301.75;
+        boolean e7 = Cr <= -2.2857 * Cb + 432.85;
         return e3 && e4 && e5 && e6 && e7;
     }
 
     boolean R3(float H, float S, float V) {
-        return (H<25) || (H > 230);
+        return (H < 25) || (H > 230);
     }
 
     public Mat getSkin(Mat src) {
@@ -447,7 +455,7 @@ public class MainActivity extends ActionBarActivity
 
         Imgproc.cvtColor(src, src, Imgproc.COLOR_RGBA2BGR);
 
-        Mat src_ycrcb= new Mat(), src_hsv = new Mat();
+        Mat src_ycrcb = new Mat(), src_hsv = new Mat();
         // OpenCV scales the YCrCb components, so that they
         // cover the whole value range of [0,255], so there's
         // no need to scale the values:
@@ -457,7 +465,7 @@ public class MainActivity extends ActionBarActivity
         // the full spectrum from [0,360] by using floating
         // point precision:
         src.convertTo(src_hsv, CvType.CV_32FC3);
-        Imgproc.cvtColor(src_hsv, src_hsv,Imgproc.COLOR_BGR2HSV);
+        Imgproc.cvtColor(src_hsv, src_hsv, Imgproc.COLOR_BGR2HSV);
         // Now scale the values between [0,255]:
         Core.normalize(src_hsv, src_hsv, 0.0, 255.0, Core.NORM_MINMAX, CvType.CV_32FC3);
 
@@ -468,6 +476,7 @@ public class MainActivity extends ActionBarActivity
                 int B = pix_bgr[0];
                 int G = pix_bgr[1];
                 int R = pix_bgr[2];
+
                 // apply rgb rules
                 boolean a = R1(R, G, B);
 
@@ -485,7 +494,7 @@ public class MainActivity extends ActionBarActivity
                 float S = (float) pix_hsv[1];
                 float V = (float) pix_hsv[2];
                 // apply hsv rule
-                boolean c = R3(H,S,V);
+                boolean c = R3(H, S, V);
 
                 if(!(a||b||c)){
                     dst.put(i,j,cblack);
@@ -497,15 +506,35 @@ public class MainActivity extends ActionBarActivity
         }
         return dst;
     }
-    private Mat poster(Mat bgr){
+
+    private Mat poster2(Mat bgr) {
+        for (int i = 0; i < bgr.cols(); i++) {
+            for (int j = 0; j < bgr.rows(); j++) {
+                double[] pixel = bgr.get(j, i);
+                for (int c = 0; c < bgr.channels(); c++) {
+                    if (pixel[c] > 127)
+                        pixel[c] = 255;
+                    else
+                        pixel[c] = 0;
+                }
+                bgr.put(j, i, pixel);
+            }
+        }
+        return bgr;
+    }
+
+    private Mat poster(Mat bgr, int size) {
+        org.opencv.core.Size ksize = new org.opencv.core.Size(size, size);
+        Mat MorphKernel = Imgproc.getStructuringElement(Imgproc.MORPH_CROSS, ksize);
+        Imgproc.morphologyEx(bgr, bgr, Imgproc.MORPH_RECT, MorphKernel);
+        return bgr;
+    }
+
+    private Mat distorsionCojin(Mat bgr, int adjust) {
         return null;
     }
 
-    private Mat distorsionCojin(Mat bgr, int adjust){
-        return null;
-    }
-
-    private Mat distorsionBarril(Mat bgr, int adjust){
+    private Mat distorsionBarril(Mat bgr, int adjust) {
         return null;
     }
 
@@ -568,7 +597,7 @@ public class MainActivity extends ActionBarActivity
             return null;
     }
 
-    private void takePhoto(final Mat rgba) {
+    private void takePhoto() {
 
         // Determine the path and metadata for the photo.
         final long currentTimeMillis = System.currentTimeMillis();
@@ -596,41 +625,6 @@ public class MainActivity extends ActionBarActivity
                     albumPath);
             onTakePhotoFailed();
             return;
-        }
-
-        Mat aux = new Mat();
-        // Try to create the photo.
-        switch (mPhotoType) {
-            case 0:
-                //NORMAL PHOTO
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
-                break;
-            case 1:
-                //CLAHE - Contrast Limited AHE
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
-                mBgr = clahe(mBgr, 2);
-                break;
-            case 2:
-                //HISTOGRAM EQUALIZATION
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
-                mBgr = histEqual(mBgr);
-                break;
-            case 3:
-                //ALIEN EFFECT
-                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                //mBgr = alien(mBgr);
-            case 4:
-                //POSTER EFFECT
-                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                //mBgr = poster(mBgr);
-            case 5:
-                //DISTORSION BARRIL EFFECT
-                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                //mBgr = distorsionBarril(mBgr,-1);
-            case 6:
-                //DISTORSION COJIN EFFECT
-                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                //mBgr = distorsionCojin(mBgr,-1);
         }
 
         if (!Imgcodecs.imwrite(photoPath, mBgr)) {
