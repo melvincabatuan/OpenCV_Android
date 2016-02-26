@@ -131,9 +131,9 @@ public class MainActivity extends ActionBarActivity
             os.close();
 
             // Load the cascade classifier
-            //cascadeClassifier = new CascadeClassifier(mCascadeFile.getAbsolutePath());
-            cascadeClassifier.load(mCascadeFile.getAbsolutePath());
+            cascadeClassifier = new CascadeClassifier("android.resource://OpenCV_Android/app/src/main/raw/haarcascade_frontalface_alt.xml");
             if(cascadeClassifier.empty()){
+                Log.i(TAG, "Loaded cascade classifier from " + mCascadeFile.getAbsolutePath());
                 throw new RuntimeException("CASCADE EMPTY");
             }
         } catch (Exception e) {
@@ -358,18 +358,30 @@ public class MainActivity extends ActionBarActivity
                 break;
             case 1:
                 //CLAHE - Contrast Limited AHE
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
                 mBgr = clahe(mBgr, 2);
                 break;
             case 2:
                 //HISTOGRAM EQUALIZATION
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
                 mBgr = histEqual(mBgr);
                 break;
             case 3:
                 //ALIEN EFFECT
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                /*Mat hsv = new Mat();
+                Mat res = new Mat();
+                double scaleSatLower = 0.28;
+                double scaleSatUpper = 0.68;
+                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
                 //mBgr = alien(rgba);
+                Imgproc.cvtColor(rgba, hsv, Imgproc.COLOR_BGR2HSV);
+                Scalar lower=new Scalar(0,scaleSatLower*255,0);
+                Scalar upper=new Scalar(25,scaleSatUpper*255,255);
+                Core.inRange(hsv,lower,upper,res);
+                Imgproc.cvtColor(res, mBgr, Imgproc.COLOR_HSV2BGR);*/
+
+
+
                 mBgr= getSkin(rgba);
             case 4:
                 //POSTER EFFECT
@@ -428,17 +440,12 @@ public class MainActivity extends ActionBarActivity
         // allocate the result matrix
         Mat dst = src.clone();
 
-        byte[] cwhite = new byte[4];
-        cwhite[0]=Byte.MAX_VALUE;
-        cwhite[1]=Byte.MAX_VALUE;
-        cwhite[2]=Byte.MAX_VALUE;
-        cwhite[3]=Byte.MAX_VALUE;
-        byte[] cblack = new byte[4];
-        cblack[0]=Byte.MIN_VALUE;
-        cblack[1]=Byte.MIN_VALUE;
-        cblack[2]=Byte.MIN_VALUE;
-        cblack[3]=Byte.MIN_VALUE;
+        byte[] cblack = new byte[src.channels()];
+        for (int i=0;i<src.channels();i++){
+            cblack[i]=Byte.MIN_VALUE;
+        }
 
+        Imgproc.cvtColor(src, src, Imgproc.COLOR_RGBA2BGR);
 
         Mat src_ycrcb= new Mat(), src_hsv = new Mat();
         // OpenCV scales the YCrCb components, so that they
@@ -456,29 +463,36 @@ public class MainActivity extends ActionBarActivity
 
         for(int i = 0; i < src.rows(); i++) {
             for(int j = 0; j < src.cols(); j++) {
-                double[] pix_bgr = src.get(i,j);
-                double B = pix_bgr[0];
-                double G = pix_bgr[1];
-                double R = pix_bgr[2];
+                byte[] pix_bgr = new byte[3];
+                src.get(i,j,pix_bgr);
+                int B = pix_bgr[0];
+                int G = pix_bgr[1];
+                int R = pix_bgr[2];
                 // apply rgb rules
-                boolean a = R1((int) R, (int) G, (int) B);
+                boolean a = R1(R, G, B);
 
-                double[] pix_ycrcb = src_ycrcb.get(i,j);
-                double Y = pix_ycrcb[0];
-                double Cr = pix_ycrcb[1];
-                double Cb = pix_ycrcb[2];
+                byte[] pix_ycrcb = new byte[3];
+                src_ycrcb.get(i,j,pix_ycrcb);
+                int Y = pix_ycrcb[0];
+                int Cr = pix_ycrcb[1];
+                int Cb = pix_ycrcb[2];
                 // apply ycrcb rule
-                boolean b = R2((int)Y,(int)Cr,(int)Cb);
+                boolean b = R2( Y,  Cr,  Cb);
 
-                double[] pix_hsv = src_hsv.get(i,j);
+                float[] pix_hsv = new float[3];
+                src_hsv.get(i,j,pix_hsv);
                 float H = (float) pix_hsv[0];
                 float S = (float) pix_hsv[1];
                 float V = (float) pix_hsv[2];
                 // apply hsv rule
                 boolean c = R3(H,S,V);
 
-                if(!(a&&b&&c))
+                if(!(a||b||c)){
                     dst.put(i,j,cblack);
+                }
+                else{
+                    Log.d("DBG","bien");
+                }
             }
         }
         return dst;
