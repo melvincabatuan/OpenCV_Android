@@ -508,16 +508,16 @@ public class MainActivity extends ActionBarActivity
     }
 
     private Mat poster2(Mat bgr) {
-        for (int i = 0; i < bgr.cols(); i++) {
-            for (int j = 0; j < bgr.rows(); j++) {
-                double[] pixel = bgr.get(j, i);
+        for (int i = 0; i < bgr.rows(); i++) {
+            for (int j = 0; j < bgr.cols(); j++) {
+                double[] pixel = bgr.get(i, j);
                 for (int c = 0; c < bgr.channels(); c++) {
                     if (pixel[c] > 127)
                         pixel[c] = 255;
                     else
                         pixel[c] = 0;
                 }
-                bgr.put(j, i, pixel);
+                bgr.put(i, j, pixel);
             }
         }
         return bgr;
