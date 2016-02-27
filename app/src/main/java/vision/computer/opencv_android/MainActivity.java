@@ -186,7 +186,6 @@ public class MainActivity extends ActionBarActivity
         camera.release();
         mSupportedImageSizes =
                 parameters.getSupportedPreviewSizes();
-        mImageSizeIndex = mSupportedImageSizes.size()-1;
         final Size size = mSupportedImageSizes.get(mImageSizeIndex);
 
         mCameraView = new JavaCameraView(this, mCameraIndex);
@@ -352,55 +351,49 @@ public class MainActivity extends ActionBarActivity
     @Override
     public Mat onCameraFrame(final CvCameraViewFrame inputFrame) {
         final Mat rgba = inputFrame.rgba();
-        boolean post=true;
+        boolean post = true;
+        Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
         switch (mPhotoType) {
             case 0:
                 //NORMAL PHOTO
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
                 break;
             case 1:
                 //CLAHE - Contrast Limited AHE
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
                 mBgr = clahe(mBgr, 2);
                 break;
             case 2:
                 //HISTOGRAM EQUALIZATION
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
                 mBgr = histEqual(mBgr);
                 break;
             case 3:
                 //ALIEN EFFECT
-                mBgr= getSkin(rgba);
+                mBgr = getSkin(rgba);
                 break;
             case 4:
                 //Alien2
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
                 mBgr = alienHSV(mBgr);
-                post=false;
+                post = false;
                 break;
             case 5:
                 //POSTER EFFECT COLOR
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                mBgr = poster(mBgr,10);
+                mBgr = poster(mBgr, 10);
                 break;
             case 6:
                 //POSTER EFFECT CONTRAST
-                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
                 mBgr = poster2(mBgr);
                 break;
             case 7:
                 //DISTORSION BARRIL EFFECT
-                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                //mBgr = distorsionBarril(mBgr,-1);
+                mBgr = distorsionBarril(mBgr, new double[]{1.06335, -5.18432, -1.13009, 5});
+                break;
             case 8:
                 //DISTORSION COJIN EFFECT
                 //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
                 //mBgr = distorsionCojin(mBgr,-1);
         }
-        if(post){
+        if (post) {
             Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA);
-        }
-        else{
+        } else {
             return mBgr;
         }
 
@@ -411,18 +404,19 @@ public class MainActivity extends ActionBarActivity
         return rgba;
     }
 
-    private Mat alienHSV(Mat bgr){
+    private Mat alienHSV(Mat bgr) {
         Mat hsv = new Mat();
         Mat res = new Mat();
         double scaleSatLower = 0.28;
         double scaleSatUpper = 0.68;
 
         Imgproc.cvtColor(bgr, hsv, Imgproc.COLOR_BGR2HSV);
-        Scalar lower=new Scalar(0,scaleSatLower*255,0);
-        Scalar upper=new Scalar(25,scaleSatUpper*255,255);
+        Scalar lower = new Scalar(0, scaleSatLower * 255, 0);
+        Scalar upper = new Scalar(25, scaleSatUpper * 255, 255);
         Core.inRange(hsv, lower, upper, res);
         return res;
     }
+
     private Mat facialDetection(Mat bgr) {
         Imgproc.cvtColor(bgr, grayscaleImage, Imgproc.COLOR_RGBA2RGB);
         MatOfRect faces = new MatOfRect();
@@ -466,13 +460,13 @@ public class MainActivity extends ActionBarActivity
 
         Mat dst = src.clone();
         byte[] cblack = new byte[src.channels()];
-        for (int i=0;i<src.channels();i++){
-            cblack[i]=Byte.MIN_VALUE;
+        for (int i = 0; i < src.channels(); i++) {
+            cblack[i] = Byte.MIN_VALUE;
         }
-        byte[] cred= new byte[3];
-        cred[0]=0;
-        cred[1]=0;
-        cred[2]=Byte.MAX_VALUE;
+        byte[] cred = new byte[3];
+        cred[0] = 0;
+        cred[1] = 0;
+        cred[2] = Byte.MAX_VALUE;
 
 
         Mat src_ycrcb = new Mat(), src_hsv = new Mat();
@@ -489,10 +483,10 @@ public class MainActivity extends ActionBarActivity
         // Now scale the values between [0,255]:
         Core.normalize(src_hsv, src_hsv, 0.0, 255.0, Core.NORM_MINMAX, CvType.CV_32FC3);
 
-        for(int i = 0; i < src.rows(); i++) {
-            for(int j = 0; j < src.cols(); j++) {
+        for (int i = 0; i < src.rows(); i++) {
+            for (int j = 0; j < src.cols(); j++) {
                 byte[] pix_bgr = new byte[3];
-                src.get(i,j,pix_bgr);
+                src.get(i, j, pix_bgr);
                 int B = pix_bgr[0];
                 int G = pix_bgr[1];
                 int R = pix_bgr[2];
@@ -501,26 +495,25 @@ public class MainActivity extends ActionBarActivity
                 boolean a = R1(R, G, B);
 
                 byte[] pix_ycrcb = new byte[3];
-                src_ycrcb.get(i,j,pix_ycrcb);
+                src_ycrcb.get(i, j, pix_ycrcb);
                 int Y = pix_ycrcb[0];
                 int Cr = pix_ycrcb[1];
                 int Cb = pix_ycrcb[2];
                 // apply ycrcb rule
-                boolean b = R2( Y,  Cr,  Cb);
+                boolean b = R2(Y, Cr, Cb);
 
                 float[] pix_hsv = new float[3];
-                src_hsv.get(i,j,pix_hsv);
+                src_hsv.get(i, j, pix_hsv);
                 float H = (float) pix_hsv[0];
                 float S = (float) pix_hsv[1];
                 float V = (float) pix_hsv[2];
                 // apply hsv rule
                 boolean c = R3(H, S, V);
 
-                if((a||b||c)){
-                    dst.put(i,j,cred);
-                }
-                else{
-                    Log.d("DBG","bien");
+                if ((a || b || c)) {
+                    dst.put(i, j, cred);
+                } else {
+                    Log.d("DBG", "bien");
                 }
             }
         }
@@ -550,12 +543,29 @@ public class MainActivity extends ActionBarActivity
         return bgr;
     }
 
-    private Mat distorsionCojin(Mat bgr, int adjust) {
+    private Mat distorsionCojin(Mat bgra, int adjust) {
         return null;
+
     }
 
-    private Mat distorsionBarril(Mat bgr, int adjust) {
-        return null;
+    private Mat distorsionBarril(Mat bgr, double[] k) {
+        Mat distCoeff = new Mat();
+        Mat cam1 = Mat.eye(3, 3, CvType.CV_32FC1);
+        Mat cam2 = Mat.eye(3, 3, CvType.CV_32FC1);
+
+        int i = 0;
+        for (double d : k) {
+            distCoeff.put(i, 0, d);
+            i++;
+        }
+
+        Mat map1 = new Mat();
+        Mat map2 = new Mat();
+        Imgproc.initUndistortRectifyMap(cam1, distCoeff, new Mat(), cam2, bgr.size(), CvType.CV_32FC1, map1, map2);
+
+        Mat result = new Mat();
+        Imgproc.remap(bgr, result, map1, map2, Imgproc.INTER_LINEAR);
+        return result;
     }
 
     /**
