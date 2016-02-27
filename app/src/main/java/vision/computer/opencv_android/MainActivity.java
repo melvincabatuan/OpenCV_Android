@@ -155,6 +155,7 @@ public class MainActivity extends ActionBarActivity
         imageTypes.add(getResources().getString(R.string.menu_clahe));
         imageTypes.add(getResources().getString(R.string.menu_heist));
         imageTypes.add(getResources().getString(R.string.menu_alien));
+        imageTypes.add(getResources().getString(R.string.menu_alienHSV));
         imageTypes.add(getResources().getString(R.string.menu_poster));
         imageTypes.add(getResources().getString(R.string.menu_posterContrast));
         imageTypes.add(getResources().getString(R.string.menu_distorsionB));
@@ -306,14 +307,16 @@ public class MainActivity extends ActionBarActivity
                 mPhotoType = 2;
             else if (item.getTitle().equals(getResources().getString(R.string.menu_alien)))
                 mPhotoType = 3;
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_poster)))
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_alienHSV)))
                 mPhotoType = 4;
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_posterContrast)))
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_poster)))
                 mPhotoType = 5;
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionB)))
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_posterContrast)))
                 mPhotoType = 6;
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionC)))
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionB)))
                 mPhotoType = 7;
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionC)))
+                mPhotoType = 8;
 
             return true;
         }
@@ -349,7 +352,7 @@ public class MainActivity extends ActionBarActivity
     @Override
     public Mat onCameraFrame(final CvCameraViewFrame inputFrame) {
         final Mat rgba = inputFrame.rgba();
-
+        boolean post=true;
         switch (mPhotoType) {
             case 0:
                 //NORMAL PHOTO
@@ -357,49 +360,49 @@ public class MainActivity extends ActionBarActivity
                 break;
             case 1:
                 //CLAHE - Contrast Limited AHE
-                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
                 mBgr = clahe(mBgr, 2);
                 break;
             case 2:
                 //HISTOGRAM EQUALIZATION
-                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
                 mBgr = histEqual(mBgr);
                 break;
             case 3:
                 //ALIEN EFFECT
-                /*Mat hsv = new Mat();
-                Mat res = new Mat();
-                double scaleSatLower = 0.28;
-                double scaleSatUpper = 0.68;
-                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                //mBgr = alien(rgba);
-                Imgproc.cvtColor(rgba, hsv, Imgproc.COLOR_BGR2HSV);
-                Scalar lower=new Scalar(0,scaleSatLower*255,0);
-                Scalar upper=new Scalar(25,scaleSatUpper*255,255);
-                Core.inRange(hsv,lower,upper,res);
-                Imgproc.cvtColor(res, mBgr, Imgproc.COLOR_HSV2BGR);*/
                 mBgr= getSkin(rgba);
                 break;
             case 4:
+                //Alien2
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                mBgr = alienHSV(mBgr);
+                post=false;
+                break;
+            case 5:
                 //POSTER EFFECT COLOR
                 Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
                 mBgr = poster(mBgr,10);
                 break;
-            case 5:
+            case 6:
                 //POSTER EFFECT CONTRAST
                 Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
                 mBgr = poster2(mBgr);
                 break;
-            case 6:
+            case 7:
                 //DISTORSION BARRIL EFFECT
                 //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
                 //mBgr = distorsionBarril(mBgr,-1);
-            case 7:
+            case 8:
                 //DISTORSION COJIN EFFECT
                 //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
                 //mBgr = distorsionCojin(mBgr,-1);
         }
-        Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA);
+        if(post){
+            Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA);
+        }
+        else{
+            return mBgr;
+        }
 
         if (mIsPhotoPending) {
             mIsPhotoPending = false;
@@ -408,7 +411,19 @@ public class MainActivity extends ActionBarActivity
         return rgba;
     }
 
-    private Mat alien(Mat bgr) {
+    private Mat alienHSV(Mat bgr){
+        Mat hsv = new Mat();
+        Mat res = new Mat();
+        double scaleSatLower = 0.28;
+        double scaleSatUpper = 0.68;
+
+        Imgproc.cvtColor(bgr, hsv, Imgproc.COLOR_BGR2HSV);
+        Scalar lower=new Scalar(0,scaleSatLower*255,0);
+        Scalar upper=new Scalar(25,scaleSatUpper*255,255);
+        Core.inRange(hsv, lower, upper, res);
+        return res;
+    }
+    private Mat facialDetection(Mat bgr) {
         Imgproc.cvtColor(bgr, grayscaleImage, Imgproc.COLOR_RGBA2RGB);
         MatOfRect faces = new MatOfRect();
 
@@ -446,14 +461,19 @@ public class MainActivity extends ActionBarActivity
 
     public Mat getSkin(Mat src) {
         // allocate the result matrix
-        Mat dst = src.clone();
 
+        Imgproc.cvtColor(src, src, Imgproc.COLOR_RGBA2BGR);
+
+        Mat dst = src.clone();
         byte[] cblack = new byte[src.channels()];
         for (int i=0;i<src.channels();i++){
             cblack[i]=Byte.MIN_VALUE;
         }
+        byte[] cred= new byte[3];
+        cred[0]=0;
+        cred[1]=0;
+        cred[2]=Byte.MAX_VALUE;
 
-        Imgproc.cvtColor(src, src, Imgproc.COLOR_RGBA2BGR);
 
         Mat src_ycrcb = new Mat(), src_hsv = new Mat();
         // OpenCV scales the YCrCb components, so that they
@@ -496,8 +516,8 @@ public class MainActivity extends ActionBarActivity
                 // apply hsv rule
                 boolean c = R3(H, S, V);
 
-                if(!(a||b||c)){
-                    dst.put(i,j,cblack);
+                if((a||b||c)){
+                    dst.put(i,j,cred);
                 }
                 else{
                     Log.d("DBG","bien");
