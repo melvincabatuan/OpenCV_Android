@@ -384,7 +384,7 @@ public class MainActivity extends ActionBarActivity
                 break;
             case 7:
                 //DISTORSION BARRIL EFFECT
-                mBgr = distorsionBarril(mBgr, new double[]{1.06335, -5.18432, -1.13009, 5});
+                mBgr = distorsionBarril(mBgr, 0.06335f, 0.06335f, 1f);
                 break;
             case 8:
                 //DISTORSION COJIN EFFECT
@@ -548,24 +548,52 @@ public class MainActivity extends ActionBarActivity
 
     }
 
-    private Mat distorsionBarril(Mat bgr, double[] k) {
+    float calc_shift(float x1, float x2, float cx, float k) {
+        float thresh = 1;
+        float x3 = x1 + (x2 - x1) * (float) 0.5;
+        float res1 = x1 + ((x1 - cx) * k * ((x1 - cx) * (x1 - cx)));
+        float res3 = x3 + ((x3 - cx) * k * ((x3 - cx) * (x3 - cx)));
+
+        if (res1 > -thresh && res1 < thresh)
+            return x1;
+        if (res3 < 0) {
+            return calc_shift(x3, x2, cx, k);
+        } else {
+            return calc_shift(x1, x3, cx, k);
+        }
+    }
+
+    private Mat distorsionBarril(Mat bgr, float Cx, float Cy, float k) {
         Mat distCoeff = new Mat();
         Mat cam1 = Mat.eye(3, 3, CvType.CV_32FC1);
         Mat cam2 = Mat.eye(3, 3, CvType.CV_32FC1);
 
-        int i = 0;
-        for (double d : k) {
-            distCoeff.put(i, 0, d);
-            i++;
-        }
+        int w = bgr.cols();
+        int h = bgr.rows();
+
+        float[] props;
+        float xShift = calc_shift(0, Cx - 1, Cx, k);
+        distCoeff.put(0, 0, xShift);
+        float newCenterX = w - Cx;
+        float xShift2 = calc_shift(0, newCenterX - 1, newCenterX, k);
+
+        float yShift = calc_shift(0, Cy - 1, Cy, k);
+        distCoeff.put(1, 0, yShift);
+        float newCenterY = w - Cy;
+        float yShift2 = calc_shift(0, newCenterY - 1, newCenterY, k);
+
+        float xScale = (w - xShift - xShift2) / w;
+        distCoeff.put(2, 0, xScale);
+        float yScale = (h - yShift - yShift2) / h;
+        distCoeff.put(3, 0, yScale);
 
         Mat map1 = new Mat();
         Mat map2 = new Mat();
         Imgproc.initUndistortRectifyMap(cam1, distCoeff, new Mat(), cam2, bgr.size(), CvType.CV_32FC1, map1, map2);
 
         Mat result = new Mat();
-        Imgproc.remap(bgr, result, map1, map2, Imgproc.INTER_LINEAR);
-        return result;
+        Imgproc.remap(bgr, bgr, map1, map2, Imgproc.INTER_LINEAR);
+        return bgr;
     }
 
     /**
