@@ -36,6 +36,7 @@ public class Filters {
         final double GS_BLUE = 0.11;
         // color information
         double[] pixel = new double[3];
+        Log.d("DBG","channels: "+bgr.channels());
 
         // scan through all pixels
         for (int x = 0; x < rows; ++x) {
@@ -97,7 +98,7 @@ public class Filters {
         return bgr;
     }
 
-    private boolean R1(int R, int G, int B) {
+    private boolean R1(double R, double G, double B) {
         boolean e1 = (R > 95) && (G > 40) && (B > 20) && ((Math.max(R, Math.max(G, B)) - Math.min(R, Math.min(G, B))) > 15) && (Math.abs(R - G) > 15) && (R > G) && (R > B);
         boolean e2 = (R > 220) && (G > 210) && (B > 170) && (Math.abs(R - G) <= 15) && (R > B) && (G > B);
         return (e1 || e2);
@@ -119,7 +120,7 @@ public class Filters {
     public Mat getSkin(Mat src) {
         // allocate the result matrix
 
-        Imgproc.cvtColor(src, src, Imgproc.COLOR_RGBA2BGR);
+        //Imgproc.cvtColor(src, src, Imgproc.COLOR_RGBA2BGR);
 
         Mat dst = src.clone();
         byte[] cblack = new byte[src.channels()];
@@ -148,22 +149,22 @@ public class Filters {
 
         for (int i = 0; i < src.rows(); i++) {
             for (int j = 0; j < src.cols(); j++) {
-                byte[] pix_bgr = new byte[3];
-                src.get(i, j, pix_bgr);
-                int B = pix_bgr[0];
-                int G = pix_bgr[1];
-                int R = pix_bgr[2];
+                double[] pix_bgr = new double[3];
+                pix_bgr=src.get(i, j);
+                double B = pix_bgr[0];
+                double G = pix_bgr[1];
+                double R = pix_bgr[2];
 
                 // apply rgb rules
                 boolean a = R1(R, G, B);
 
-                byte[] pix_ycrcb = new byte[3];
-                src_ycrcb.get(i, j, pix_ycrcb);
-                int Y = pix_ycrcb[0];
-                int Cr = pix_ycrcb[1];
-                int Cb = pix_ycrcb[2];
+                double[] pix_ycrcb = new double[3];
+                pix_ycrcb=src_ycrcb.get(i, j);
+                double Y = pix_ycrcb[0];
+                double Cr = pix_ycrcb[1];
+                double Cb = pix_ycrcb[2];
                 // apply ycrcb rule
-                boolean b = R2(Y, Cr, Cb);
+                boolean b = R2((float)Y, (float)Cr, (float)Cb);
 
                 float[] pix_hsv = new float[3];
                 src_hsv.get(i, j, pix_hsv);
@@ -173,10 +174,15 @@ public class Filters {
                 // apply hsv rule
                 boolean c = R3(H, S, V);
 
-                if ((a || b || c)) {
-                    dst.put(i, j, cred);
+                if ((a && b && c)) {
+                    double[] pixeldst= new double[3];
+                    pixeldst[0]= B;
+                    pixeldst[1]= G+100;
+                    pixeldst[2]=R;
+                    if (pixeldst[1]>255)
+                        pixeldst[1]=255;
+                    dst.put(i, j, pixeldst);
                 } else {
-                    Log.d("DBG", "bien");
                 }
             }
         }
@@ -316,6 +322,26 @@ public class Filters {
             return heistMat;
         } else
             return null;
+    }
+
+    public Mat distorsionBarril(Mat bgr, int k) {
+        Mat map_x= new Mat(), map_y=new Mat(), output=new Mat();
+        double Cy = (double)bgr.cols()/2;
+        double Cx = (double)bgr.rows()/2;
+        map_x.create(bgr.size(), CvType.CV_32FC1);
+        map_y.create(bgr.size(), CvType.CV_32FC1);
+
+        for (int x=0; x<map_x.rows(); x++) {
+            for (int y=0; y<map_y.cols(); y++) {
+                double r2 = (x-Cx)*(x-Cx) + (y-Cy)*(y-Cy);
+                double data= ((y-Cy)/(1 + (k/1000000.0)*r2)+Cy); // se suma para obtener la posicion absoluta
+                map_x.put(x,y,data);
+                double data2 =((x-Cx)/(1 +(k/1000000.0)*r2)+Cx); // la posicion relativa del punto al centro
+                map_y.put(x,y,data2);
+            }
+        }
+        Imgproc.remap(bgr, output, map_x, map_y,Imgproc.INTER_LINEAR);
+        return output;
     }
 
 }

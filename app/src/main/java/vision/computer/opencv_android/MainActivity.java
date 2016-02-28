@@ -399,7 +399,7 @@ public class MainActivity extends ActionBarActivity
             mBgr = F.histEqual(mBgr);
 
         if (mPhotoType.contains(getResources().getString(R.string.menu_alien)))
-            mBgr = F.getSkin(rgba);
+            mBgr = F.getSkin(mBgr);
 
         if (mPhotoType.contains(getResources().getString(R.string.menu_alienHSV))){
             mBgr = F.alienHSV(mBgr);
