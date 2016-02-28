@@ -30,14 +30,9 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfRect;
-import org.opencv.core.Rect;
-import org.opencv.core.Scalar;
 import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.imgproc.CLAHE;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 
@@ -110,7 +105,7 @@ public class MainActivity extends ActionBarActivity
         mPhotoType = 3 --> Alien effect
         mPhotoType = 4 --> Poster effect
         mPhotoType = 5 --> Distorsion effect */
-    private int mPhotoType = 0;
+    private ArrayList<String> mPhotoType = new ArrayList<String>();
 
     private int mAdjustLevel = -1;
 
@@ -160,6 +155,7 @@ public class MainActivity extends ActionBarActivity
         imageTypes.add(getResources().getString(R.string.menu_posterContrast));
         imageTypes.add(getResources().getString(R.string.menu_distorsionB));
         imageTypes.add(getResources().getString(R.string.menu_distorsionC));
+        imageTypes.add(getResources().getString(R.string.menu_sepia));
 
         final Window window = getWindow();
         window.addFlags(
@@ -299,23 +295,64 @@ public class MainActivity extends ActionBarActivity
         }
         if (item.getGroupId() == MENU_GROUP_ID_TYPE) {
             if (item.getTitle().equals(getResources().getString(R.string.menu_normal)))
-                mPhotoType = 0;
+                if (mPhotoType.contains(getResources().getString(R.string.menu_normal)))
+                    mPhotoType.clear();
+                else
+                    mPhotoType.add(getResources().getString(R.string.menu_normal));
+
             else if (item.getTitle().equals(getResources().getString(R.string.menu_clahe)))
-                mPhotoType = 1;
+                if (mPhotoType.contains(getResources().getString(R.string.menu_clahe)))
+                    mPhotoType.remove(getResources().getString(R.string.menu_clahe));
+                else
+                    mPhotoType.add(getResources().getString(R.string.menu_clahe));
+
             else if (item.getTitle().equals(getResources().getString(R.string.menu_heist)))
-                mPhotoType = 2;
+                if (mPhotoType.contains(getResources().getString(R.string.menu_clahe)))
+                    mPhotoType.remove(getResources().getString(R.string.menu_clahe));
+                else
+                    mPhotoType.add(getResources().getString(R.string.menu_clahe));
+
             else if (item.getTitle().equals(getResources().getString(R.string.menu_alien)))
-                mPhotoType = 3;
+                if (mPhotoType.contains(getResources().getString(R.string.menu_alien)))
+                    mPhotoType.remove(getResources().getString(R.string.menu_alien));
+                else
+                    mPhotoType.add(getResources().getString(R.string.menu_alien));
+
             else if (item.getTitle().equals(getResources().getString(R.string.menu_alienHSV)))
-                mPhotoType = 4;
+                if (mPhotoType.contains(getResources().getString(R.string.menu_alienHSV)))
+                    mPhotoType.remove(getResources().getString(R.string.menu_alienHSV));
+                else
+                    mPhotoType.add(getResources().getString(R.string.menu_alienHSV));
+
             else if (item.getTitle().equals(getResources().getString(R.string.menu_poster)))
-                mPhotoType = 5;
+                if (mPhotoType.contains(getResources().getString(R.string.menu_poster)))
+                    mPhotoType.remove(getResources().getString(R.string.menu_poster));
+                else
+                    mPhotoType.add(getResources().getString(R.string.menu_poster));
+
             else if (item.getTitle().equals(getResources().getString(R.string.menu_posterContrast)))
-                mPhotoType = 6;
+                if (mPhotoType.contains(getResources().getString(R.string.menu_posterContrast)))
+                    mPhotoType.remove(getResources().getString(R.string.menu_posterContrast));
+                else
+                    mPhotoType.add(getResources().getString(R.string.menu_posterContrast));
+
             else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionB)))
-                mPhotoType = 7;
+                if (mPhotoType.contains(getResources().getString(R.string.menu_distorsionB)))
+                    mPhotoType.remove(getResources().getString(R.string.menu_distorsionB));
+                else
+                    mPhotoType.add(getResources().getString(R.string.menu_distorsionB));
+
             else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionC)))
-                mPhotoType = 8;
+                if (mPhotoType.contains(getResources().getString(R.string.menu_distorsionC)))
+                    mPhotoType.remove(getResources().getString(R.string.menu_distorsionC));
+                else
+                    mPhotoType.add(getResources().getString(R.string.menu_distorsionC));
+
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_sepia)))
+                if (mPhotoType.contains(getResources().getString(R.string.menu_sepia)))
+                    mPhotoType.remove(getResources().getString(R.string.menu_sepia));
+                else
+                    mPhotoType.add(getResources().getString(R.string.menu_sepia));
 
             return true;
         }
@@ -352,47 +389,39 @@ public class MainActivity extends ActionBarActivity
     public Mat onCameraFrame(final CvCameraViewFrame inputFrame) {
         final Mat rgba = inputFrame.rgba();
         boolean post = true;
+        Filters F = new Filters();
         Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
-        switch (mPhotoType) {
-            case 0:
-                //NORMAL PHOTO
-                break;
-            case 1:
-                //CLAHE - Contrast Limited AHE
-                mBgr = clahe(mBgr, 2);
-                break;
-            case 2:
-                //HISTOGRAM EQUALIZATION
-                mBgr = histEqual(mBgr);
-                break;
-            case 3:
-                //ALIEN EFFECT
-                mBgr = getSkin(rgba);
-                break;
-            case 4:
-                //Alien2
-                mBgr = alienHSV(mBgr);
-                post = false;
-                break;
-            case 5:
-                //POSTER EFFECT COLOR
-                mBgr = poster(mBgr, 10);
-                break;
-            case 6:
-                //POSTER EFFECT CONTRAST
-                mBgr = poster2(mBgr);
-                break;
-            case 7:
-                //DISTORSION BARRIL EFFECT
-                mBgr = distorsionBarril(mBgr, 0.06335f, 0.06335f, 1f);
-                break;
-            case 8:
-                //DISTORSION COJIN EFFECT
-                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                //mBgr = distorsionCojin(mBgr,-1);
+
+        if (mPhotoType.contains(getResources().getString(R.string.menu_clahe)))
+            mBgr = F.clahe(mBgr, 2);
+
+        if (mPhotoType.contains(getResources().getString(R.string.menu_heist)))
+            mBgr = F.histEqual(mBgr);
+
+        if (mPhotoType.contains(getResources().getString(R.string.menu_alien)))
+            mBgr = F.getSkin(rgba);
+
+        if (mPhotoType.contains(getResources().getString(R.string.menu_alienHSV))){
+            mBgr = F.alienHSV(mBgr);
+            post = false;
         }
+        if (mPhotoType.contains(getResources().getString(R.string.menu_poster)))
+            mBgr = F.poster(mBgr, 10);
+
+        if (mPhotoType.contains(getResources().getString(R.string.menu_posterContrast)))
+            mBgr = F.poster2(mBgr);
+
+        if (mPhotoType.contains(getResources().getString(R.string.menu_distorsionB)))
+            mBgr = F.distorsionBarril(mBgr, 0.06335f, 0.06335f, 1f);
+
+        if (mPhotoType.contains(getResources().getString(R.string.menu_distorsionC)))
+            mBgr = F.distorsionBarril(mBgr, 0.06335f, 0.06335f, 1f);
+
+        if (mPhotoType.contains(getResources().getString(R.string.menu_sepia)))
+            mBgr = F.sepia(mBgr, 1);
+
         if (post) {
-            Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA);
+            Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA, 3);
         } else {
             return mBgr;
         }
@@ -402,257 +431,6 @@ public class MainActivity extends ActionBarActivity
             takePhoto();
         }
         return rgba;
-    }
-
-    private Mat alienHSV(Mat bgr) {
-        Mat hsv = new Mat();
-        Mat res = new Mat();
-        double scaleSatLower = 0.28;
-        double scaleSatUpper = 0.68;
-
-        Imgproc.cvtColor(bgr, hsv, Imgproc.COLOR_BGR2HSV);
-        Scalar lower = new Scalar(0, scaleSatLower * 255, 0);
-        Scalar upper = new Scalar(25, scaleSatUpper * 255, 255);
-        Core.inRange(hsv, lower, upper, res);
-        return res;
-    }
-
-    private Mat facialDetection(Mat bgr) {
-        Imgproc.cvtColor(bgr, grayscaleImage, Imgproc.COLOR_RGBA2RGB);
-        MatOfRect faces = new MatOfRect();
-
-
-        // Use the classifier to detect faces
-        if (cascadeClassifier != null) {
-            cascadeClassifier.detectMultiScale(grayscaleImage, faces, 1.1, 2, 2, new org.opencv.core.Size(absoluteFaceSize, absoluteFaceSize), new org.opencv.core.Size());
-        }
-
-        // If there are any faces found, draw a rectangle around it
-        Rect[] facesArray = faces.toArray();
-        for (int i = 0; i < facesArray.length; i++)
-            Imgproc.rectangle(bgr, facesArray[i].tl(), facesArray[i].br(), new Scalar(0, 255, 0, 255), 3);
-        return bgr;
-    }
-
-    public boolean R1(int R, int G, int B) {
-        boolean e1 = (R > 95) && (G > 40) && (B > 20) && ((Math.max(R, Math.max(G, B)) - Math.min(R, Math.min(G, B))) > 15) && (Math.abs(R - G) > 15) && (R > G) && (R > B);
-        boolean e2 = (R > 220) && (G > 210) && (B > 170) && (Math.abs(R - G) <= 15) && (R > B) && (G > B);
-        return (e1 || e2);
-    }
-
-    public boolean R2(float Y, float Cr, float Cb) {
-        boolean e3 = Cr <= 1.5862 * Cb + 20;
-        boolean e4 = Cr >= 0.3448 * Cb + 76.2069;
-        boolean e5 = Cr >= -4.5652 * Cb + 234.5652;
-        boolean e6 = Cr <= -1.15 * Cb + 301.75;
-        boolean e7 = Cr <= -2.2857 * Cb + 432.85;
-        return e3 && e4 && e5 && e6 && e7;
-    }
-
-    boolean R3(float H, float S, float V) {
-        return (H < 25) || (H > 230);
-    }
-
-    public Mat getSkin(Mat src) {
-        // allocate the result matrix
-
-        Imgproc.cvtColor(src, src, Imgproc.COLOR_RGBA2BGR);
-
-        Mat dst = src.clone();
-        byte[] cblack = new byte[src.channels()];
-        for (int i = 0; i < src.channels(); i++) {
-            cblack[i] = Byte.MIN_VALUE;
-        }
-        byte[] cred = new byte[3];
-        cred[0] = 0;
-        cred[1] = 0;
-        cred[2] = Byte.MAX_VALUE;
-
-
-        Mat src_ycrcb = new Mat(), src_hsv = new Mat();
-        // OpenCV scales the YCrCb components, so that they
-        // cover the whole value range of [0,255], so there's
-        // no need to scale the values:
-        Imgproc.cvtColor(src, src_ycrcb, Imgproc.COLOR_BGR2YCrCb);
-        // OpenCV scales the Hue Channel to [0,180] for
-        // 8bit images, so make sure we are operating on
-        // the full spectrum from [0,360] by using floating
-        // point precision:
-        src.convertTo(src_hsv, CvType.CV_32FC3);
-        Imgproc.cvtColor(src_hsv, src_hsv, Imgproc.COLOR_BGR2HSV);
-        // Now scale the values between [0,255]:
-        Core.normalize(src_hsv, src_hsv, 0.0, 255.0, Core.NORM_MINMAX, CvType.CV_32FC3);
-
-        for (int i = 0; i < src.rows(); i++) {
-            for (int j = 0; j < src.cols(); j++) {
-                byte[] pix_bgr = new byte[3];
-                src.get(i, j, pix_bgr);
-                int B = pix_bgr[0];
-                int G = pix_bgr[1];
-                int R = pix_bgr[2];
-
-                // apply rgb rules
-                boolean a = R1(R, G, B);
-
-                byte[] pix_ycrcb = new byte[3];
-                src_ycrcb.get(i, j, pix_ycrcb);
-                int Y = pix_ycrcb[0];
-                int Cr = pix_ycrcb[1];
-                int Cb = pix_ycrcb[2];
-                // apply ycrcb rule
-                boolean b = R2(Y, Cr, Cb);
-
-                float[] pix_hsv = new float[3];
-                src_hsv.get(i, j, pix_hsv);
-                float H = (float) pix_hsv[0];
-                float S = (float) pix_hsv[1];
-                float V = (float) pix_hsv[2];
-                // apply hsv rule
-                boolean c = R3(H, S, V);
-
-                if ((a || b || c)) {
-                    dst.put(i, j, cred);
-                } else {
-                    Log.d("DBG", "bien");
-                }
-            }
-        }
-        return dst;
-    }
-
-    private Mat poster2(Mat bgr) {
-        for (int i = 0; i < bgr.rows(); i++) {
-            for (int j = 0; j < bgr.cols(); j++) {
-                double[] pixel = bgr.get(i, j);
-                for (int c = 0; c < bgr.channels(); c++) {
-                    if (pixel[c] > 127)
-                        pixel[c] = 255;
-                    else
-                        pixel[c] = 0;
-                }
-                bgr.put(i, j, pixel);
-            }
-        }
-        return bgr;
-    }
-
-    private Mat poster(Mat bgr, int size) {
-        org.opencv.core.Size ksize = new org.opencv.core.Size(size, size);
-        Mat MorphKernel = Imgproc.getStructuringElement(Imgproc.MORPH_CROSS, ksize);
-        Imgproc.morphologyEx(bgr, bgr, Imgproc.MORPH_RECT, MorphKernel);
-        return bgr;
-    }
-
-    private Mat distorsionCojin(Mat bgra, int adjust) {
-        return null;
-
-    }
-
-    float calc_shift(float x1, float x2, float cx, float k) {
-        float thresh = 1;
-        float x3 = x1 + (x2 - x1) * (float) 0.5;
-        float res1 = x1 + ((x1 - cx) * k * ((x1 - cx) * (x1 - cx)));
-        float res3 = x3 + ((x3 - cx) * k * ((x3 - cx) * (x3 - cx)));
-
-        if (res1 > -thresh && res1 < thresh)
-            return x1;
-        if (res3 < 0) {
-            return calc_shift(x3, x2, cx, k);
-        } else {
-            return calc_shift(x1, x3, cx, k);
-        }
-    }
-
-    private Mat distorsionBarril(Mat bgr, float Cx, float Cy, float k) {
-        Mat distCoeff = new Mat();
-        Mat cam1 = Mat.eye(3, 3, CvType.CV_32FC1);
-        Mat cam2 = Mat.eye(3, 3, CvType.CV_32FC1);
-
-        int w = bgr.cols();
-        int h = bgr.rows();
-
-        float[] props;
-        float xShift = calc_shift(0, Cx - 1, Cx, k);
-        distCoeff.put(0, 0, xShift);
-        float newCenterX = w - Cx;
-        float xShift2 = calc_shift(0, newCenterX - 1, newCenterX, k);
-
-        float yShift = calc_shift(0, Cy - 1, Cy, k);
-        distCoeff.put(1, 0, yShift);
-        float newCenterY = w - Cy;
-        float yShift2 = calc_shift(0, newCenterY - 1, newCenterY, k);
-
-        float xScale = (w - xShift - xShift2) / w;
-        distCoeff.put(2, 0, xScale);
-        float yScale = (h - yShift - yShift2) / h;
-        distCoeff.put(3, 0, yScale);
-
-        Mat map1 = new Mat();
-        Mat map2 = new Mat();
-        Imgproc.initUndistortRectifyMap(cam1, distCoeff, new Mat(), cam2, bgr.size(), CvType.CV_32FC1, map1, map2);
-
-        Mat result = new Mat();
-        Imgproc.remap(bgr, bgr, map1, map2, Imgproc.INTER_LINEAR);
-        return bgr;
-    }
-
-    /**
-     * This functions implements a histogram equalization with a limit in the contrast.
-     * We have to use the color space Lab (L for light, a and b for the colours)
-     * in order to use CLAHE algorithm. the Algorithm will be applied to the channel L
-     * and the result will be merged with the rest of the colours of the image.
-     *
-     * @param bgr
-     * @param limit
-     * @return
-     */
-    private Mat clahe(Mat bgr, int limit) {
-        if (bgr.channels() >= 3) {
-            Mat labImg = new Mat();
-            List<Mat> channels = new ArrayList<Mat>();
-            CLAHE cl = Imgproc.createCLAHE();
-            cl.setClipLimit(limit);
-
-            Imgproc.cvtColor(bgr, labImg, Imgproc.COLOR_BGR2Lab);
-
-            Core.split(labImg, channels);
-            //Apply on the channel L (Light)
-            cl.apply(channels.get(0), channels.get(0));
-            Core.merge(channels, labImg);
-
-            Imgproc.cvtColor(labImg, bgr, Imgproc.COLOR_Lab2BGR);
-
-            return bgr;
-        } else
-            return null;
-
-    }
-
-    /**
-     * This function equalize the histogram of a photo and return it. In BGR format.
-     * It change its format to HSV, split in three channels equalize V, merge them
-     * and re-format to BGR
-     *
-     * @param bgr
-     * @return BGR equalized histogram
-     */
-    private Mat histEqual(Mat bgr) {
-        if (bgr.channels() >= 3) {
-            Mat aux = new Mat();
-            Mat heistMat = new Mat();
-            List<Mat> channels = new ArrayList<Mat>();
-
-            Imgproc.cvtColor(bgr, aux, Imgproc.COLOR_BGR2YCrCb);
-            Core.split(aux, channels);
-            //Get channel Y, the one that represents the gray scale of the image
-            // we are going to equalize its histogram.
-            Imgproc.equalizeHist(channels.get(0), channels.get(0));
-            Core.merge(channels, aux);
-            Imgproc.cvtColor(aux, heistMat, Imgproc.COLOR_YCrCb2BGR);
-
-            return heistMat;
-        } else
-            return null;
     }
 
     private void takePhoto() {
