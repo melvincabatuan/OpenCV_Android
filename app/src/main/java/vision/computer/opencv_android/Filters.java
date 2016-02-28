@@ -166,8 +166,8 @@ public class Filters {
                 // apply ycrcb rule
                 boolean b = R2((float)Y, (float)Cr, (float)Cb);
 
-                float[] pix_hsv = new float[3];
-                src_hsv.get(i, j, pix_hsv);
+                double[] pix_hsv = new double[3];
+                pix_hsv= src_hsv.get(i, j);
                 float H = (float) pix_hsv[0];
                 float S = (float) pix_hsv[1];
                 float V = (float) pix_hsv[2];
