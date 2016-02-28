@@ -12,6 +12,7 @@
     <string name="menu_normal">Normal</string>
     <string name="menu_clahe">CLAHE</string>
     <string name="menu_alien">Alien</string>
+    <string name="menu_alienHSV">AlienHSV</string>
     <string name="menu_distorsionB">Barril</string>
     <string name="menu_distorsionC">Cojin</string>
     <string name="menu_poster">Poster Color</string>
