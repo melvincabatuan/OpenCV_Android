@@ -390,8 +390,8 @@ public class MainActivity extends ActionBarActivity
                 break;
             case 7:
                 //DISTORSION BARRIL EFFECT
-                //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
-                //mBgr = distorsionBarril(mBgr,-1);
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
+                mBgr = distorsionBarril(mBgr,-5);
             case 8:
                 //DISTORSION COJIN EFFECT
                 //Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR);
@@ -516,7 +516,7 @@ public class MainActivity extends ActionBarActivity
                 // apply hsv rule
                 boolean c = R3(H, S, V);
 
-                if((a||b||c)){
+                if((a&&b&&c)){
                     dst.put(i,j,cred);
                 }
                 else{
@@ -554,8 +554,24 @@ public class MainActivity extends ActionBarActivity
         return null;
     }
 
-    private Mat distorsionBarril(Mat bgr, int adjust) {
-        return null;
+    private Mat distorsionBarril(Mat bgr, int k) {
+        Mat map_x= new Mat(), map_y=new Mat(), output=new Mat();
+        double Cy = (double)bgr.cols()/2;
+        double Cx = (double)bgr.rows()/2;
+        map_x.create(bgr.size(), CvType.CV_32FC1);
+        map_y.create(bgr.size(), CvType.CV_32FC1);
+
+        for (int x=0; x<map_x.rows(); x++) {
+            for (int y=0; y<map_y.cols(); y++) {
+                double r2 = (x-Cx)*(x-Cx) + (y-Cy)*(y-Cy);
+                double data= ((y-Cy)/(1 + (k/1000000.0)*r2)+Cy); // se suma para obtener la posicion absoluta
+                map_x.put(x,y,data);
+                double data2 =((x-Cx)/(1 +(k/1000000.0)*r2)+Cx); // la posicion relativa del punto al centro
+                map_y.put(x,y,data2);
+            }
+        }
+        Imgproc.remap(bgr, output, map_x, map_y,Imgproc.INTER_LINEAR);
+        return output;
     }
 
     /**
