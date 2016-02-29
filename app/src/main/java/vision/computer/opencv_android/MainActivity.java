@@ -399,7 +399,7 @@ public class MainActivity extends ActionBarActivity
             mBgr = F.histEqual(mBgr);
 
         if (mPhotoType.contains(getResources().getString(R.string.menu_alien)))
-            mBgr = F.getSkin(mBgr);
+            mBgr = F.getSkin(rgba);
 
         if (mPhotoType.contains(getResources().getString(R.string.menu_alienHSV))){
             mBgr = F.alienHSV(mBgr);
@@ -412,10 +412,10 @@ public class MainActivity extends ActionBarActivity
             mBgr = F.poster2(mBgr);
 
         if (mPhotoType.contains(getResources().getString(R.string.menu_distorsionB)))
-            mBgr = F.distorsionBarril(mBgr, -1);
+            mBgr = F.distorsionBarril(mBgr, 0.06335f, 0.06335f, 1f);
 
         if (mPhotoType.contains(getResources().getString(R.string.menu_distorsionC)))
-            mBgr = F.distorsionBarril(mBgr, 1);
+            mBgr = F.distorsionBarril(mBgr, 0.06335f, 0.06335f, 1f);
 
         if (mPhotoType.contains(getResources().getString(R.string.menu_sepia)))
             mBgr = F.sepia(mBgr, 1);
