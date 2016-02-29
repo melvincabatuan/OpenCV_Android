@@ -1,6 +1,7 @@
 package vision.computer.opencv_android;
 
 import android.annotation.SuppressLint;
+import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -16,11 +17,16 @@ import android.provider.MediaStore;
 import android.provider.MediaStore.Images;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SubMenu;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -79,6 +85,7 @@ public class MainActivity extends ActionBarActivity
     // If so, menu interaction should be disabled.
     private boolean mIsMenuLocked;
     // The OpenCV loader callback.
+    Dialog mBottomSheetDialog;
 
     private CascadeClassifier cascadeClassifier;
     private Mat grayscaleImage;
@@ -140,7 +147,7 @@ public class MainActivity extends ActionBarActivity
     }
 
     // Suppress backward incompatibility errors because we provide
-    // backward-compatible fallbacks.
+    // backward-compatible fallbacks
     @SuppressLint("NewApi")
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -155,7 +162,8 @@ public class MainActivity extends ActionBarActivity
         imageTypes.add(getResources().getString(R.string.menu_posterContrast));
         imageTypes.add(getResources().getString(R.string.menu_distorsionB));
         imageTypes.add(getResources().getString(R.string.menu_distorsionC));
-        imageTypes.add(getResources().getString(R.string.menu_sepia));
+        imageTypes.add(getResources().getString(R.string.menu_sketch));
+        imageTypes.add(getResources().getString(R.string.menu_cartoon));
 
         final Window window = getWindow();
         window.addFlags(
@@ -188,6 +196,40 @@ public class MainActivity extends ActionBarActivity
         mCameraView.setMaxFrameSize(size.width, size.height);
         mCameraView.setCvCameraViewListener(this);
         setContentView(mCameraView);
+
+    }
+    public void openBottomSheet (View v) {
+        /**
+         * Set Bottom sheet dialog
+         */
+        View view = getLayoutInflater ().inflate (R.layout.bottom_sheet, null);
+
+        mBottomSheetDialog = new Dialog (MainActivity.this,
+                R.style.MaterialDialogSheet);
+        mBottomSheetDialog.setContentView(view);
+        mBottomSheetDialog.setCancelable(true);
+        mBottomSheetDialog.getWindow ().setLayout(LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        mBottomSheetDialog.getWindow ().setGravity(Gravity.BOTTOM);
+        mBottomSheetDialog.show();
+    }
+
+
+        public void onRadioButtonClicked(View view) {
+        boolean checked = ((RadioButton) view).isChecked();
+
+        switch(view.getId()) {
+            case R.id.radio_blue:
+                if (checked)
+                    mBottomSheetDialog.dismiss();
+                    break;
+            case R.id.radio_green:
+                if (checked)
+                    break;
+            case R.id.radio_red:
+                if (checked)
+                    break;
+        }
     }
 
     public void onSaveInstanceState(Bundle savedInstanceState) {
@@ -354,6 +396,17 @@ public class MainActivity extends ActionBarActivity
                 else
                     mPhotoType.add(getResources().getString(R.string.menu_sepia));
 
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_sketch)))
+                if (mPhotoType.contains(getResources().getString(R.string.menu_sketch)))
+                    mPhotoType.remove(getResources().getString(R.string.menu_sketch));
+                else
+                    mPhotoType.add(getResources().getString(R.string.menu_sketch));
+
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_cartoon)))
+                if (mPhotoType.contains(getResources().getString(R.string.menu_cartoon)))
+                    mPhotoType.remove(getResources().getString(R.string.menu_cartoon));
+                else
+                    mPhotoType.add(getResources().getString(R.string.menu_cartoon));
             return true;
         }
         /*if(item.getGroupId() == SMENU_ADJUST){
@@ -419,6 +472,12 @@ public class MainActivity extends ActionBarActivity
 
         if (mPhotoType.contains(getResources().getString(R.string.menu_sepia)))
             mBgr = F.sepia(mBgr, 1);
+
+        if (mPhotoType.contains(getResources().getString(R.string.menu_sketch)))
+            mBgr = F.sketch(mBgr);
+
+        if (mPhotoType.contains(getResources().getString(R.string.menu_cartoon)))
+            mBgr = F.cartoon(mBgr);
 
         if (post) {
             Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA, 3);

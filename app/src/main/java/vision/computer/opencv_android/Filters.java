@@ -8,6 +8,7 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.CLAHE;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
@@ -36,7 +37,7 @@ public class Filters {
         final double GS_BLUE = 0.11;
         // color information
         double[] pixel = new double[3];
-        Log.d("DBG","channels: "+bgr.channels());
+        Log.d("DBG", "channels: " + bgr.channels());
 
         // scan through all pixels
         for (int x = 0; x < rows; ++x) {
@@ -340,8 +341,59 @@ public class Filters {
                 map_y.put(x,y,data2);
             }
         }
-        Imgproc.remap(bgr, output, map_x, map_y,Imgproc.INTER_LINEAR);
+        Imgproc.remap(bgr, output, map_x, map_y, Imgproc.INTER_LINEAR);
         return output;
     }
 
+    public Mat sketch(Mat bgr){
+        Mat gray= new Mat();
+        Imgproc.cvtColor(bgr,gray, Imgproc.COLOR_BGR2GRAY);
+
+        /*for (int x = 0; x < gray.rows(); ++x) {
+            for (int y = 0; y < gray.cols(); ++y) {
+                pixel = gray.get(x, y);
+                pixel[0]=255-pixel[0];
+                gray.put(x,y,pixel);
+            }
+        }*/
+        Mat blur =new Mat();
+        Imgproc.GaussianBlur(gray, blur, new Size(21, 21), 0, 0);
+
+        Mat dst=new Mat();
+        Core.divide(gray, blur, dst, 256);
+
+        Imgproc.cvtColor(dst, dst, Imgproc.COLOR_GRAY2BGR);
+        return dst;
+    }
+    public Mat cartoon (Mat bgr) {
+        Mat image = new Mat();
+        Imgproc.cvtColor(bgr,bgr,Imgproc.COLOR_BGR2RGB);
+        for (int i = 0; i < 2; i++) {
+            Imgproc.pyrDown(bgr, image);
+        }
+        Mat image_bi=new Mat();
+        for (int j = 0; j < 7; j++) {
+            Imgproc.bilateralFilter(image, image_bi, 9, 9, 7);
+        }
+        for (int i = 0; i < 2; i++) {
+            Imgproc.pyrUp(image_bi, image_bi);
+        }
+        Mat gray = new Mat();
+        Mat blur = new Mat();
+        Imgproc.cvtColor(image_bi, gray, Imgproc.COLOR_RGB2GRAY);
+        Imgproc.medianBlur(gray, blur, 7);
+        Mat edge = new Mat();
+        Imgproc.adaptiveThreshold(blur, edge, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 9, 2);
+
+        Imgproc.cvtColor(edge, edge, Imgproc.COLOR_GRAY2RGB);
+        Mat cartoon = new Mat();
+        Core.bitwise_and(image_bi, edge,cartoon);
+
+        Imgproc.cvtColor(cartoon,cartoon,Imgproc.COLOR_RGB2BGR);
+
+        return cartoon;
+    }
+
+
 }
+

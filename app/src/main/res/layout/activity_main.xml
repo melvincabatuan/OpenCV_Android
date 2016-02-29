@@ -1,16 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     xmlns:opencv="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
-    <org.opencv.android.JavaCameraView
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:visibility="gone"
-        android:id="@+id/java_surface_view"
-        opencv:show_fps="true"
-        opencv:camera_id="any" />
+    <LinearLayout
+        android:id="@+id/CamV"
+        android:layout_width="match_parent"
+        android:layout_height="10px">
+        <org.opencv.android.JavaCameraView
+            android:layout_width="fill_parent"
+            android:layout_height="52dp"
+            android:visibility="gone"
+            android:id="@+id/java_surface_view"
+            opencv:show_fps="true"
+            opencv:camera_id="any" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/BottonC"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="bottom">
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="20dp"
+            android:layout_centerHorizontal="true"
+            android:layout_gravity="bottom"
+            android:background="#a1a4b3"
+            android:text="Settings"
+            android:textColor="@android:color/white"
+            android:textSize="15sp"
+            android:onClick="openBottomSheet"/>
+    </LinearLayout>
+
 
 </FrameLayout>
