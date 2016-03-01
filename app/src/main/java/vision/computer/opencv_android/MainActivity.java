@@ -15,7 +15,8 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Images;
-import android.support.v7.app.ActionBarActivity;
+import android.support.design.widget.Snackbar;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -47,7 +48,7 @@ import java.util.List;
 // Use the deprecated Camera class.
 @SuppressWarnings("deprecation")
 
-public class MainActivity extends ActionBarActivity
+public class MainActivity extends AppCompatActivity
         implements CvCameraViewListener2 {
     // A tag for log output.
     private static final String TAG =
@@ -110,6 +111,7 @@ public class MainActivity extends ActionBarActivity
     private ArrayList<String> mPhotoType = new ArrayList<String>();
 
     private int mAdjustLevel = -1;
+    private int mSelectionValue = 1;
 
     private void initializeOpenCVDependencies() {
         try {
@@ -301,7 +303,7 @@ public class MainActivity extends ActionBarActivity
             imageSubMenu.add(MENU_GROUP_ID_TYPE, i, Menu.NONE, s);
             i++;
         }
-        imageSubMenu.addSubMenu("Prueba");
+
         return true;
     }
 
@@ -396,6 +398,7 @@ public class MainActivity extends ActionBarActivity
                     mPhotoType.add(getResources().getString(R.string.menu_cartoon));
             return true;
         }
+        Snackbar snackbar;
         switch (item.getItemId()) {
             case R.id.menu_take_photo:
                 //Do not let to use the menu while taking a photo
@@ -403,6 +406,22 @@ public class MainActivity extends ActionBarActivity
                 // FLAG Next frame, take the photo.
                 mIsPhotoPending = true;
 
+                return true;
+            case R.id.menu_upwards:
+                mSelectionValue++;
+                snackbar = Snackbar.make(findViewById(android.R.id.content), "Adjust level: " + mSelectionValue, Snackbar.LENGTH_LONG);
+                snackbar.show();
+                return true;
+            case R.id.menu_downwards:
+                if(mSelectionValue>1) {
+                    mSelectionValue--;
+                    snackbar = Snackbar.make(findViewById(android.R.id.content), "Adjust level: " + mSelectionValue, Snackbar.LENGTH_LONG);
+                    snackbar.show();
+                }
+                else {
+                    snackbar = Snackbar.make(findViewById(android.R.id.content), "Adjust level cannot be lower", Snackbar.LENGTH_LONG);
+                    snackbar.show();
+                }
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -429,7 +448,7 @@ public class MainActivity extends ActionBarActivity
         Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
         if (mPhotoType.size() > 0) {
             if (mPhotoType.contains(getResources().getString(R.string.menu_clahe)))
-                mBgr = F.clahe(mBgr, 2);
+                mBgr = F.clahe(mBgr, mSelectionValue);
 
             if (mPhotoType.contains(getResources().getString(R.string.menu_heist)))
                 mBgr = F.histEqual(mBgr);
@@ -443,22 +462,22 @@ public class MainActivity extends ActionBarActivity
             }
 
             if (mPhotoType.contains(getResources().getString(R.string.menu_poster)))
-                mBgr = F.poster(mBgr, 10);
+                mBgr = F.poster(mBgr, mSelectionValue);
 
             if (mPhotoType.contains(getResources().getString(R.string.menu_posterContrast)))
                 mBgr = F.poster2(mBgr);
 
             if (mPhotoType.contains(getResources().getString(R.string.menu_distorsionB)))
-                mBgr = F.distorsionBarril(mBgr, -1);
+                mBgr = F.distorsionBarril(mBgr, -mSelectionValue);
 
             if (mPhotoType.contains(getResources().getString(R.string.menu_distorsionC)))
-                mBgr = F.distorsionBarril(mBgr, 1);
+                mBgr = F.distorsionBarril(mBgr, mSelectionValue);
 
             if (mPhotoType.contains(getResources().getString(R.string.menu_sepia)))
-                mBgr = F.sepia(mBgr, 1);
+                mBgr = F.sepia(mBgr, mSelectionValue);
 
             if (mPhotoType.contains(getResources().getString(R.string.menu_smooth))) {
-                mBgr = F.smooth(mBgr, 5);
+                mBgr = F.smooth(mBgr, mSelectionValue);
                 post = false;
             }
             if (mPhotoType.contains(getResources().getString(R.string.menu_sketch)))
