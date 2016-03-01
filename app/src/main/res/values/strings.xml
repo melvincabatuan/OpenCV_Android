@@ -3,6 +3,9 @@
     <string name="title_activity_image_activity">Image_activity</string>
     <string name="delete">Delete</string>
     <string name="edit">Edit</string>
+    <string name="green">Green</string>
+    <string name="red">Red</string>
+    <string name="blue">Blue</string>
     <string name="menu_next_camera">Next Cam</string>
     <string name="menu_take_photo">Take Photo</string>
     <string name="menu_image_size">Size</string>
@@ -18,6 +21,8 @@
     <string name="menu_distorsionB">Barril</string>
     <string name="menu_distorsionC">Cojin</string>
     <string name="menu_poster">Poster Color</string>
+    <string name="menu_sketch">Sketch</string>
+    <string name="menu_cartoon">Cartoon</string>
     <string name="photo_delete_prompt_message">This photo is saved in your Gallery. Do you want to delete it?</string>
     <string name="photo_delete_prompt_title">Delete photo?</string>
     <string name="photo_error_message">Failed to save photo</string>
@@ -26,4 +31,5 @@
     <string name="photo_send_extra_subject">My photo from Second Sight</string>
     <string name="photo_send_extra_text">Check out my photo from the Second Sight app! http://nummist.com/opencv/</string>
     <string name="share">Share</string>
+    <!-- strings -->
 </resources>

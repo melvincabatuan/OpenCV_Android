@@ -1,6 +1,7 @@
 package vision.computer.opencv_android;
 
 import android.annotation.SuppressLint;
+import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -19,6 +20,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SubMenu;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Toast;
@@ -63,6 +65,8 @@ public class MainActivity extends ActionBarActivity
     private static final int MENU_GROUP_ID_TYPE = 2;
     private static final int SMENU_ADJUST = 4;
     ArrayList<String> imageTypes = new ArrayList<String>();
+    // The OpenCV loader callback.
+    Dialog mBottomSheetDialog;
     // The index of the active camera.
     private int mCameraIndex;
     // The index of the active image size.
@@ -78,8 +82,6 @@ public class MainActivity extends ActionBarActivity
     // Whether an asynchronous menu action is in progress.
     // If so, menu interaction should be disabled.
     private boolean mIsMenuLocked;
-    // The OpenCV loader callback.
-
     private CascadeClassifier cascadeClassifier;
     private Mat grayscaleImage;
     private int absoluteFaceSize;
@@ -140,7 +142,7 @@ public class MainActivity extends ActionBarActivity
     }
 
     // Suppress backward incompatibility errors because we provide
-    // backward-compatible fallbacks.
+    // backward-compatible fallbacks
     @SuppressLint("NewApi")
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -157,6 +159,8 @@ public class MainActivity extends ActionBarActivity
         imageTypes.add(getResources().getString(R.string.menu_distorsionC));
         imageTypes.add(getResources().getString(R.string.menu_sepia));
         imageTypes.add(getResources().getString(R.string.menu_smooth));
+        imageTypes.add(getResources().getString(R.string.menu_sketch));
+        imageTypes.add(getResources().getString(R.string.menu_cartoon));
 
         final Window window = getWindow();
         window.addFlags(
@@ -189,6 +193,41 @@ public class MainActivity extends ActionBarActivity
         mCameraView.setMaxFrameSize(size.width, size.height);
         mCameraView.setCvCameraViewListener(this);
         setContentView(mCameraView);
+
+    }
+
+    public void openBottomSheet(View v) {
+        /**
+         * Set Bottom sheet dialog
+         */
+        /*View view = getLayoutInflater().inflate(R.layout.bottom_sheet, null);
+
+        mBottomSheetDialog = new Dialog(MainActivity.this,
+                R.style.MaterialDialogSheet);
+        mBottomSheetDialog.setContentView(view);
+        mBottomSheetDialog.setCancelable(true);
+        mBottomSheetDialog.getWindow().setLayout(LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        mBottomSheetDialog.getWindow().setGravity(Gravity.BOTTOM);
+        mBottomSheetDialog.show();
+    }
+
+
+    public void onRadioButtonClicked(View view) {
+        boolean checked = ((RadioButton) view).isChecked();
+
+        switch (view.getId()) {
+            case R.id.radio_blue:
+                if (checked)
+                    mBottomSheetDialog.dismiss();
+                break;
+            case R.id.radio_green:
+                if (checked)
+                    break;
+            case R.id.radio_red:
+                if (checked)
+                    break;
+        }*/
     }
 
     public void onSaveInstanceState(Bundle savedInstanceState) {
@@ -262,6 +301,7 @@ public class MainActivity extends ActionBarActivity
             imageSubMenu.add(MENU_GROUP_ID_TYPE, i, Menu.NONE, s);
             i++;
         }
+        imageSubMenu.addSubMenu("Prueba");
         return true;
     }
 
@@ -343,6 +383,17 @@ public class MainActivity extends ActionBarActivity
                 else
                     mPhotoType.add(getResources().getString(R.string.menu_smooth));
 
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_sketch)))
+                if (mPhotoType.contains(getResources().getString(R.string.menu_sketch)))
+                    mPhotoType.remove(getResources().getString(R.string.menu_sketch));
+                else
+                    mPhotoType.add(getResources().getString(R.string.menu_sketch));
+
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_cartoon)))
+                if (mPhotoType.contains(getResources().getString(R.string.menu_cartoon)))
+                    mPhotoType.remove(getResources().getString(R.string.menu_cartoon));
+                else
+                    mPhotoType.add(getResources().getString(R.string.menu_cartoon));
             return true;
         }
         switch (item.getItemId()) {
@@ -390,6 +441,7 @@ public class MainActivity extends ActionBarActivity
                 mBgr = F.alienHSV(mBgr);
                 post = false;
             }
+
             if (mPhotoType.contains(getResources().getString(R.string.menu_poster)))
                 mBgr = F.poster(mBgr, 10);
 
@@ -409,6 +461,17 @@ public class MainActivity extends ActionBarActivity
                 mBgr = F.smooth(mBgr, 5);
                 post = false;
             }
+            if (mPhotoType.contains(getResources().getString(R.string.menu_sketch)))
+                mBgr = F.sketch(mBgr);
+
+            if (mPhotoType.contains(getResources().getString(R.string.menu_cartoon)))
+                mBgr = F.cartoon(mBgr);
+
+            if (post) {
+                Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA, 3);
+            } else {
+                return mBgr;
+            }
         }
 
         if (mIsPhotoPending) {
@@ -421,6 +484,7 @@ public class MainActivity extends ActionBarActivity
         } else
             return mBgr;
     }
+
 
     private void takePhoto() {
 
