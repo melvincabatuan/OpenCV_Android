@@ -21,16 +21,44 @@ import java.util.List;
  */
 public class Filters {
 
+    final static double e = 2.71828;
+
     public Filters() {
     }
 
-    public static Mat smooth(Mat src, double value) {
-        ConvolutionMatrix convMatrix = new ConvolutionMatrix(3);
-        convMatrix.setAll(1);
-        convMatrix.Matrix[1][1] = value;
-        convMatrix.factor = value + 8;
-        convMatrix.offset = 1;
-        return ConvolutionMatrix.computeConvolution3x3(src, convMatrix);
+    public static Mat gaussianSmooth(Mat src, double ro) {
+        int size = 5;
+        Mat MorphKernel = new Mat();
+        double coef = 0;
+        double[][] res = new double[size][size];
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                res[i][j] = Math.pow(e, -((i * i + j * j) / (2 * ro * ro)));
+                coef += res[i][j];
+            }
+        }
+        double c = coef / (size * size);
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                MorphKernel.put(i, j, res[i][j] * c);
+            }
+        }
+        //Applies the morfological operation MORPH_RECT to a MAT given a Kernel
+        Imgproc.morphologyEx(src, src, Imgproc.MORPH_RECT, MorphKernel);
+        return src;
+    }
+
+    public static Mat boxSmooth(Mat src) {
+        Mat MorphKernel = new Mat();
+        int size = 5;
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                MorphKernel.put(i, j, 1);
+            }
+        }
+        //Applies the morfological operation MORPH_RECT to a MAT given a Kernel
+        Imgproc.morphologyEx(src, src, Imgproc.MORPH_RECT, MorphKernel);
+        return src;
     }
 
     public Mat sepia(Mat bgr, int depth) {
@@ -73,7 +101,6 @@ public class Filters {
                 bgr.put(x, y, pixel);
             }
         }
-
         // return final image
         return bgr;
     }
@@ -129,9 +156,6 @@ public class Filters {
 
     public Mat getSkin(Mat src) {
         // allocate the result matrix
-
-        //Imgproc.cvtColor(src, src, Imgproc.COLOR_RGBA2BGR);
-
         Mat dst = src.clone();
         byte[] cblack = new byte[src.channels()];
         for (int i = 0; i < src.channels(); i++) {
@@ -160,7 +184,7 @@ public class Filters {
         for (int i = 0; i < src.rows(); i++) {
             for (int j = 0; j < src.cols(); j++) {
                 double[] pix_bgr = new double[3];
-                pix_bgr=src.get(i, j);
+                pix_bgr = src.get(i, j);
                 double B = pix_bgr[0];
                 double G = pix_bgr[1];
                 double R = pix_bgr[2];
@@ -169,15 +193,15 @@ public class Filters {
                 boolean a = R1(R, G, B);
 
                 double[] pix_ycrcb = new double[3];
-                pix_ycrcb=src_ycrcb.get(i, j);
+                pix_ycrcb = src_ycrcb.get(i, j);
                 double Y = pix_ycrcb[0];
                 double Cr = pix_ycrcb[1];
                 double Cb = pix_ycrcb[2];
                 // apply ycrcb rule
-                boolean b = R2((float)Y, (float)Cr, (float)Cb);
+                boolean b = R2((float) Y, (float) Cr, (float) Cb);
 
                 double[] pix_hsv = new double[3];
-                pix_hsv= src_hsv.get(i, j);
+                pix_hsv = src_hsv.get(i, j);
                 float H = (float) pix_hsv[0];
                 float S = (float) pix_hsv[1];
                 float V = (float) pix_hsv[2];
@@ -185,12 +209,12 @@ public class Filters {
                 boolean c = R3(H, S, V);
 
                 if ((a && b && c)) {
-                    double[] pixeldst= new double[3];
-                    pixeldst[0]= B;
-                    pixeldst[1]= G+100;
-                    pixeldst[2]=R;
-                    if (pixeldst[1]>255)
-                        pixeldst[1]=255;
+                    double[] pixeldst = new double[3];
+                    pixeldst[0] = B;
+                    pixeldst[1] = G + 100;
+                    pixeldst[2] = R;
+                    if (pixeldst[1] > 255)
+                        pixeldst[1] = 255;
                     dst.put(i, j, pixeldst);
                 } else {
                 }
@@ -199,21 +223,24 @@ public class Filters {
         return dst;
     }
 
-    private double pixelMaximization(double pixel, int max, int min){
-        if (pixel > max/2)
+    private double pixelMaximization(double pixel, int max, int min) {
+        if (pixel > max / 2)
             pixel = max;
         else
             pixel = min;
         return pixel;
     }
 
-    public Mat poster2(Mat bgr) {
-        final int MAXCOLOR= 255;
+    public Mat poster2(Mat bgr, int index) {
+        final int MAXCOLOR = 255;
+
         for (int i = 0; i < bgr.rows(); i++) {
             for (int j = 0; j < bgr.cols(); j++) {
                 double[] pixel = bgr.get(i, j);
                 for (int c = 0; c < bgr.channels(); c++) {
-                    pixel[c] = pixelMaximization(pixel[c],MAXCOLOR,0);
+                    for (int x = 0; x < index; x++) {
+                        pixel[c] = pixelMaximization(pixel[c], MAXCOLOR, 0);
+                    }
                 }
                 bgr.put(i, j, pixel);
             }
@@ -221,10 +248,18 @@ public class Filters {
         return bgr;
     }
 
-    public Mat poster(Mat bgr, int size) {
+    public Mat poster(Mat bgr, int size, int m) {
+        int morph = -1;
+        if (m == 0)
+            morph = Imgproc.MORPH_CROSS;
+        if (m == 1)
+            morph = Imgproc.MORPH_ELLIPSE;
+
         org.opencv.core.Size ksize = new org.opencv.core.Size(size, size);
+
         //Gives a CROSS-KERNEL with the size specified.
-        Mat MorphKernel = Imgproc.getStructuringElement(Imgproc.MORPH_CROSS, ksize);
+        Mat MorphKernel = Imgproc.getStructuringElement(morph, ksize);
+
         //Applies the morfological operation MORPH_RECT to a MAT given a Kernel
         Imgproc.morphologyEx(bgr, bgr, Imgproc.MORPH_RECT, MorphKernel);
         return bgr;
@@ -290,28 +325,28 @@ public class Filters {
     }
 
     public Mat distorsionBarril(Mat bgr, int k) {
-        Mat map_x= new Mat(), map_y=new Mat(), output=new Mat();
-        double Cy = (double)bgr.cols()/2;
-        double Cx = (double)bgr.rows()/2;
+        Mat map_x = new Mat(), map_y = new Mat(), output = new Mat();
+        double Cy = (double) bgr.cols() / 2;
+        double Cx = (double) bgr.rows() / 2;
         map_x.create(bgr.size(), CvType.CV_32FC1);
         map_y.create(bgr.size(), CvType.CV_32FC1);
 
-        for (int x=0; x<map_x.rows(); x++) {
-            for (int y=0; y<map_y.cols(); y++) {
-                double r2 = (x-Cx)*(x-Cx) + (y-Cy)*(y-Cy);
-                double data= ((y-Cy)/(1 + (k/1000000.0)*r2)+Cy); // se suma para obtener la posicion absoluta
-                map_x.put(x,y,data);
-                double data2 =((x-Cx)/(1 +(k/1000000.0)*r2)+Cx); // la posicion relativa del punto al centro
-                map_y.put(x,y,data2);
+        for (int x = 0; x < map_x.rows(); x++) {
+            for (int y = 0; y < map_y.cols(); y++) {
+                double r2 = (x - Cx) * (x - Cx) + (y - Cy) * (y - Cy);
+                double data = ((y - Cy) / (1 + (k / 1000000.0) * r2) + Cy); // se suma para obtener la posicion absoluta
+                map_x.put(x, y, data);
+                double data2 = ((x - Cx) / (1 + (k / 1000000.0) * r2) + Cx); // la posicion relativa del punto al centro
+                map_y.put(x, y, data2);
             }
         }
         Imgproc.remap(bgr, output, map_x, map_y, Imgproc.INTER_LINEAR);
         return output;
     }
 
-    public Mat sketch(Mat bgr){
-        Mat gray= new Mat();
-        Imgproc.cvtColor(bgr,gray, Imgproc.COLOR_BGR2GRAY);
+    public Mat sketch(Mat bgr) {
+        Mat gray = new Mat();
+        Imgproc.cvtColor(bgr, gray, Imgproc.COLOR_BGR2GRAY);
 
         /*for (int x = 0; x < gray.rows(); ++x) {
             for (int y = 0; y < gray.cols(); ++y) {
@@ -320,22 +355,23 @@ public class Filters {
                 gray.put(x,y,pixel);
             }
         }*/
-        Mat blur =new Mat();
+        Mat blur = new Mat();
         Imgproc.GaussianBlur(gray, blur, new Size(21, 21), 0, 0);
 
-        Mat dst=new Mat();
+        Mat dst = new Mat();
         Core.divide(gray, blur, dst, 256);
 
         Imgproc.cvtColor(dst, dst, Imgproc.COLOR_GRAY2BGR);
         return dst;
     }
-    public Mat cartoon (Mat bgr) {
+
+    public Mat cartoon(Mat bgr) {
         Mat image = new Mat();
-        Imgproc.cvtColor(bgr,bgr,Imgproc.COLOR_BGR2RGB);
+        Imgproc.cvtColor(bgr, bgr, Imgproc.COLOR_BGR2RGB);
         for (int i = 0; i < 2; i++) {
             Imgproc.pyrDown(bgr, image);
         }
-        Mat image_bi=new Mat();
+        Mat image_bi = new Mat();
         for (int j = 0; j < 7; j++) {
             Imgproc.bilateralFilter(image, image_bi, 9, 9, 7);
         }
@@ -351,9 +387,9 @@ public class Filters {
 
         Imgproc.cvtColor(edge, edge, Imgproc.COLOR_GRAY2RGB);
         Mat cartoon = new Mat();
-        Core.bitwise_and(image_bi, edge,cartoon);
+        Core.bitwise_and(image_bi, edge, cartoon);
 
-        Imgproc.cvtColor(cartoon,cartoon,Imgproc.COLOR_RGB2BGR);
+        Imgproc.cvtColor(cartoon, cartoon, Imgproc.COLOR_RGB2BGR);
 
         return cartoon;
     }

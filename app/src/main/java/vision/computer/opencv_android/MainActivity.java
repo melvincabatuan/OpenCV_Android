@@ -21,7 +21,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SubMenu;
-import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Toast;
@@ -156,11 +155,13 @@ public class MainActivity extends AppCompatActivity
         imageTypes.add(getResources().getString(R.string.menu_alien));
         imageTypes.add(getResources().getString(R.string.menu_alienHSV));
         imageTypes.add(getResources().getString(R.string.menu_poster));
+        imageTypes.add(getResources().getString(R.string.menu_poster_Ellipse));
         imageTypes.add(getResources().getString(R.string.menu_posterContrast));
         imageTypes.add(getResources().getString(R.string.menu_distorsionB));
         imageTypes.add(getResources().getString(R.string.menu_distorsionC));
         imageTypes.add(getResources().getString(R.string.menu_sepia));
         imageTypes.add(getResources().getString(R.string.menu_smooth));
+        imageTypes.add(getResources().getString(R.string.menu_gaussian));
         imageTypes.add(getResources().getString(R.string.menu_sketch));
         imageTypes.add(getResources().getString(R.string.menu_cartoon));
 
@@ -196,40 +197,6 @@ public class MainActivity extends AppCompatActivity
         mCameraView.setCvCameraViewListener(this);
         setContentView(mCameraView);
 
-    }
-
-    public void openBottomSheet(View v) {
-        /**
-         * Set Bottom sheet dialog
-         */
-        /*View view = getLayoutInflater().inflate(R.layout.bottom_sheet, null);
-
-        mBottomSheetDialog = new Dialog(MainActivity.this,
-                R.style.MaterialDialogSheet);
-        mBottomSheetDialog.setContentView(view);
-        mBottomSheetDialog.setCancelable(true);
-        mBottomSheetDialog.getWindow().setLayout(LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        mBottomSheetDialog.getWindow().setGravity(Gravity.BOTTOM);
-        mBottomSheetDialog.show();
-    }
-
-
-    public void onRadioButtonClicked(View view) {
-        boolean checked = ((RadioButton) view).isChecked();
-
-        switch (view.getId()) {
-            case R.id.radio_blue:
-                if (checked)
-                    mBottomSheetDialog.dismiss();
-                break;
-            case R.id.radio_green:
-                if (checked)
-                    break;
-            case R.id.radio_red:
-                if (checked)
-                    break;
-        }*/
     }
 
     public void onSaveInstanceState(Bundle savedInstanceState) {
@@ -355,6 +322,12 @@ public class MainActivity extends AppCompatActivity
                 else
                     mPhotoType.add(getResources().getString(R.string.menu_poster));
 
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_poster_Ellipse)))
+                if (mPhotoType.contains(getResources().getString(R.string.menu_poster_Ellipse)))
+                    mPhotoType.remove(getResources().getString(R.string.menu_poster_Ellipse));
+                else
+                    mPhotoType.add(getResources().getString(R.string.menu_poster_Ellipse));
+
             else if (item.getTitle().equals(getResources().getString(R.string.menu_posterContrast)))
                 if (mPhotoType.contains(getResources().getString(R.string.menu_posterContrast)))
                     mPhotoType.remove(getResources().getString(R.string.menu_posterContrast));
@@ -385,6 +358,12 @@ public class MainActivity extends AppCompatActivity
                 else
                     mPhotoType.add(getResources().getString(R.string.menu_smooth));
 
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_gaussian)))
+                if (mPhotoType.contains(getResources().getString(R.string.menu_gaussian)))
+                    mPhotoType.remove(getResources().getString(R.string.menu_gaussian));
+                else
+                    mPhotoType.add(getResources().getString(R.string.menu_gaussian));
+
             else if (item.getTitle().equals(getResources().getString(R.string.menu_sketch)))
                 if (mPhotoType.contains(getResources().getString(R.string.menu_sketch)))
                     mPhotoType.remove(getResources().getString(R.string.menu_sketch));
@@ -413,12 +392,11 @@ public class MainActivity extends AppCompatActivity
                 snackbar.show();
                 return true;
             case R.id.menu_downwards:
-                if(mSelectionValue>1) {
+                if (mSelectionValue > 1) {
                     mSelectionValue--;
                     snackbar = Snackbar.make(findViewById(android.R.id.content), "Adjust level: " + mSelectionValue, Snackbar.LENGTH_LONG);
                     snackbar.show();
-                }
-                else {
+                } else {
                     snackbar = Snackbar.make(findViewById(android.R.id.content), "Adjust level cannot be lower", Snackbar.LENGTH_LONG);
                     snackbar.show();
                 }
@@ -462,10 +440,13 @@ public class MainActivity extends AppCompatActivity
             }
 
             if (mPhotoType.contains(getResources().getString(R.string.menu_poster)))
-                mBgr = F.poster(mBgr, mSelectionValue);
+                mBgr = F.poster(mBgr, mSelectionValue, 0);
+
+            if (mPhotoType.contains(getResources().getString(R.string.menu_poster_Ellipse)))
+                mBgr = F.poster(mBgr, mSelectionValue, 1);
 
             if (mPhotoType.contains(getResources().getString(R.string.menu_posterContrast)))
-                mBgr = F.poster2(mBgr);
+                mBgr = F.poster2(mBgr, 1);
 
             if (mPhotoType.contains(getResources().getString(R.string.menu_distorsionB)))
                 mBgr = F.distorsionBarril(mBgr, -mSelectionValue);
@@ -476,10 +457,12 @@ public class MainActivity extends AppCompatActivity
             if (mPhotoType.contains(getResources().getString(R.string.menu_sepia)))
                 mBgr = F.sepia(mBgr, mSelectionValue);
 
-            if (mPhotoType.contains(getResources().getString(R.string.menu_smooth))) {
-                mBgr = F.smooth(mBgr, mSelectionValue);
-                post = false;
-            }
+            if (mPhotoType.contains(getResources().getString(R.string.menu_smooth)))
+                mBgr = F.boxSmooth(mBgr);
+
+            if (mPhotoType.contains(getResources().getString(R.string.menu_gaussian)))
+                mBgr = F.gaussianSmooth(mBgr, mSelectionValue);
+
             if (mPhotoType.contains(getResources().getString(R.string.menu_sketch)))
                 mBgr = F.sketch(mBgr);
 
