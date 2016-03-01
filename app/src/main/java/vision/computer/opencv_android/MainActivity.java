@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
@@ -16,6 +17,7 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Images;
 import android.support.design.widget.Snackbar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -85,6 +87,7 @@ public class MainActivity extends AppCompatActivity
     private CascadeClassifier cascadeClassifier;
     private Mat grayscaleImage;
     private int absoluteFaceSize;
+    AlertDialog levelDialog=null;
 
     private BaseLoaderCallback mLoaderCallback =
             new BaseLoaderCallback(this) {
@@ -111,6 +114,7 @@ public class MainActivity extends AppCompatActivity
 
     private int mAdjustLevel = -1;
     private int mSelectionValue = 1;
+    private int mColor = 1;
 
     private void initializeOpenCVDependencies() {
         try {
@@ -307,8 +311,10 @@ public class MainActivity extends AppCompatActivity
             else if (item.getTitle().equals(getResources().getString(R.string.menu_alien)))
                 if (mPhotoType.contains(getResources().getString(R.string.menu_alien)))
                     mPhotoType.remove(getResources().getString(R.string.menu_alien));
-                else
+                else{
                     mPhotoType.add(getResources().getString(R.string.menu_alien));
+                    displayColorDialog();
+                }
 
             else if (item.getTitle().equals(getResources().getString(R.string.menu_alienHSV)))
                 if (mPhotoType.contains(getResources().getString(R.string.menu_alienHSV)))
@@ -405,6 +411,31 @@ public class MainActivity extends AppCompatActivity
                 return super.onOptionsItemSelected(item);
         }
     }
+    public void displayColorDialog(){
+        final CharSequence[] items = {"Blue","Green","Red"};
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select the color");
+        builder.setSingleChoiceItems(items, -1, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int item) {
+                switch(item)
+                {
+                    case 0:
+                        mColor=0;
+                        break;
+                    case 1:
+                        mColor=1;
+                        break;
+                    case 2:
+                        mColor=2;
+                        break;
+                }
+                levelDialog.dismiss();
+            }
+        });
+
+        levelDialog = builder.create();
+        levelDialog.show();
+    }
 
     @Override
     public void onCameraViewStarted(final int width,
@@ -432,7 +463,7 @@ public class MainActivity extends AppCompatActivity
                 mBgr = F.histEqual(mBgr);
 
             if (mPhotoType.contains(getResources().getString(R.string.menu_alien)))
-                mBgr = F.getSkin(mBgr);
+                mBgr = F.getSkin(mBgr,mColor);
 
             if (mPhotoType.contains(getResources().getString(R.string.menu_alienHSV))) {
                 mBgr = F.alienHSV(mBgr);
