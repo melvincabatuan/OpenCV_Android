@@ -23,6 +23,15 @@ public class Filters {
     public Filters() {
     }
 
+    public static Mat smooth(Mat src, double value) {
+        ConvolutionMatrix convMatrix = new ConvolutionMatrix(3);
+        convMatrix.setAll(1);
+        convMatrix.Matrix[1][1] = value;
+        convMatrix.factor = value + 8;
+        convMatrix.offset = 1;
+        return ConvolutionMatrix.computeConvolution3x3(src, convMatrix);
+    }
+
     public Mat sepia(Mat bgr, int depth) {
         // image size
         double red = 60;

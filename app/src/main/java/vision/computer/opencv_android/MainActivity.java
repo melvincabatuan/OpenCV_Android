@@ -156,6 +156,7 @@ public class MainActivity extends ActionBarActivity
         imageTypes.add(getResources().getString(R.string.menu_distorsionB));
         imageTypes.add(getResources().getString(R.string.menu_distorsionC));
         imageTypes.add(getResources().getString(R.string.menu_sepia));
+        imageTypes.add(getResources().getString(R.string.menu_smooth));
 
         final Window window = getWindow();
         window.addFlags(
@@ -261,21 +262,6 @@ public class MainActivity extends ActionBarActivity
             imageSubMenu.add(MENU_GROUP_ID_TYPE, i, Menu.NONE, s);
             i++;
         }
-        //SubMenu adjust = imageSubMenu.addSubMenu("Adjust");
-        /*final SubMenu barrilSubMenu = menu.addSubMenu(
-                R.string.menu_distorsionB);
-        for(i = 0; i< 10; i++)
-            barrilSubMenu.add(SMENU_ADJUST,i,Menu.NONE,i);
-
-        final SubMenu cojinSubMenu = menu.addSubMenu(
-                R.string.menu_distorsionC);
-        for(i = 0; i< 10; i++)
-            cojinSubMenu.add(SMENU_ADJUST,i,Menu.NONE,i);
-
-        final SubMenu CLAHESubMenu = menu.addSubMenu(
-                R.string.menu_clahe);
-        for(i = 0; i< 10; i++)
-            CLAHESubMenu.add(SMENU_ADJUST,i,Menu.NONE,i);*/
         return true;
     }
 
@@ -295,10 +281,7 @@ public class MainActivity extends ActionBarActivity
         }
         if (item.getGroupId() == MENU_GROUP_ID_TYPE) {
             if (item.getTitle().equals(getResources().getString(R.string.menu_normal)))
-                if (mPhotoType.contains(getResources().getString(R.string.menu_normal)))
-                    mPhotoType.clear();
-                else
-                    mPhotoType.add(getResources().getString(R.string.menu_normal));
+                mPhotoType.clear();
 
             else if (item.getTitle().equals(getResources().getString(R.string.menu_clahe)))
                 if (mPhotoType.contains(getResources().getString(R.string.menu_clahe)))
@@ -354,12 +337,14 @@ public class MainActivity extends ActionBarActivity
                 else
                     mPhotoType.add(getResources().getString(R.string.menu_sepia));
 
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_smooth)))
+                if (mPhotoType.contains(getResources().getString(R.string.menu_smooth)))
+                    mPhotoType.remove(getResources().getString(R.string.menu_smooth));
+                else
+                    mPhotoType.add(getResources().getString(R.string.menu_smooth));
+
             return true;
         }
-        /*if(item.getGroupId() == SMENU_ADJUST){
-            mAdjustLevel = item.getItemId();
-            return true;
-        }*/
         switch (item.getItemId()) {
             case R.id.menu_take_photo:
                 //Do not let to use the menu while taking a photo
@@ -391,46 +376,50 @@ public class MainActivity extends ActionBarActivity
         boolean post = true;
         Filters F = new Filters();
         Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+        if (mPhotoType.size() > 0) {
+            if (mPhotoType.contains(getResources().getString(R.string.menu_clahe)))
+                mBgr = F.clahe(mBgr, 2);
 
-        if (mPhotoType.contains(getResources().getString(R.string.menu_clahe)))
-            mBgr = F.clahe(mBgr, 2);
+            if (mPhotoType.contains(getResources().getString(R.string.menu_heist)))
+                mBgr = F.histEqual(mBgr);
 
-        if (mPhotoType.contains(getResources().getString(R.string.menu_heist)))
-            mBgr = F.histEqual(mBgr);
+            if (mPhotoType.contains(getResources().getString(R.string.menu_alien)))
+                mBgr = F.getSkin(mBgr);
 
-        if (mPhotoType.contains(getResources().getString(R.string.menu_alien)))
-            mBgr = F.getSkin(mBgr);
+            if (mPhotoType.contains(getResources().getString(R.string.menu_alienHSV))) {
+                mBgr = F.alienHSV(mBgr);
+                post = false;
+            }
+            if (mPhotoType.contains(getResources().getString(R.string.menu_poster)))
+                mBgr = F.poster(mBgr, 10);
 
-        if (mPhotoType.contains(getResources().getString(R.string.menu_alienHSV))){
-            mBgr = F.alienHSV(mBgr);
-            post = false;
-        }
-        if (mPhotoType.contains(getResources().getString(R.string.menu_poster)))
-            mBgr = F.poster(mBgr, 10);
+            if (mPhotoType.contains(getResources().getString(R.string.menu_posterContrast)))
+                mBgr = F.poster2(mBgr);
 
-        if (mPhotoType.contains(getResources().getString(R.string.menu_posterContrast)))
-            mBgr = F.poster2(mBgr);
+            if (mPhotoType.contains(getResources().getString(R.string.menu_distorsionB)))
+                mBgr = F.distorsionBarril(mBgr, -1);
 
-        if (mPhotoType.contains(getResources().getString(R.string.menu_distorsionB)))
-            mBgr = F.distorsionBarril(mBgr, -1);
+            if (mPhotoType.contains(getResources().getString(R.string.menu_distorsionC)))
+                mBgr = F.distorsionBarril(mBgr, 1);
 
-        if (mPhotoType.contains(getResources().getString(R.string.menu_distorsionC)))
-            mBgr = F.distorsionBarril(mBgr, 1);
+            if (mPhotoType.contains(getResources().getString(R.string.menu_sepia)))
+                mBgr = F.sepia(mBgr, 1);
 
-        if (mPhotoType.contains(getResources().getString(R.string.menu_sepia)))
-            mBgr = F.sepia(mBgr, 1);
-
-        if (post) {
-            Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA, 3);
-        } else {
-            return mBgr;
+            if (mPhotoType.contains(getResources().getString(R.string.menu_smooth))) {
+                mBgr = F.smooth(mBgr, 5);
+                post = false;
+            }
         }
 
         if (mIsPhotoPending) {
             mIsPhotoPending = false;
             takePhoto();
         }
-        return rgba;
+        if (post) {
+            Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA);
+            return rgba;
+        } else
+            return mBgr;
     }
 
     private void takePhoto() {
