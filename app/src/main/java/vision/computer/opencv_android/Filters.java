@@ -26,24 +26,23 @@ public class Filters {
     public Filters() {
     }
 
-    public static Mat gaussianSmooth(Mat src, double ro) {
-        int size = 5;
+    public static Mat gaussianSmooth(Mat src, int ro) {
+        int size = 5 * ro;
+        int offset = size / 2;
         Mat MorphKernel = new Mat();
         double coef = 0;
         double[][] res = new double[size][size];
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                res[i][j] = Math.pow(e, -((i * i + j * j) / (2 * ro * ro)));
-                coef += res[i][j];
+
+        for (int i = -offset; i < size - offset; i++) {
+            for (int j = -offset; j < size - offset; j++) {
+                res[i + offset][j + offset] = Math.pow(e, -((i * i + j * j) / (double)(2 * ro * ro)));
+                coef += res[i + offset][j + offset];
             }
         }
-        double c = coef / (size * size);
         for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                MorphKernel.put(i, j, res[i][j] * c);
-            }
+            for (int j = 0; j < size; j++)
+                MorphKernel.put(i, j, res[i][j] * (1/coef));
         }
-        //Applies the morfological operation MORPH_RECT to a MAT given a Kernel
         Imgproc.morphologyEx(src, src, Imgproc.MORPH_RECT, MorphKernel);
         return src;
     }
