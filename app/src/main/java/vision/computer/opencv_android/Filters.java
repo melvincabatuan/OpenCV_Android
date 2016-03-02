@@ -1,5 +1,6 @@
 package vision.computer.opencv_android;
 
+import android.graphics.Bitmap;
 import android.util.Log;
 
 import org.opencv.core.Core;
@@ -346,9 +347,13 @@ public class Filters {
     }
 
     public Mat sketch(Mat bgr) {
+        int height=bgr.height();
+        int width=bgr.width();
         Mat gray = new Mat();
-        Imgproc.cvtColor(bgr, gray, Imgproc.COLOR_BGR2GRAY);
-
+        Imgproc.cvtColor(bgr, gray, Imgproc.COLOR_BGR2GRAY,3);
+        bgr.release();
+        Mat inv = new Mat();
+        Core.bitwise_not(gray,inv);
         /*for (int x = 0; x < gray.rows(); ++x) {
             for (int y = 0; y < gray.cols(); ++y) {
                 pixel = gray.get(x, y);
@@ -356,26 +361,37 @@ public class Filters {
                 gray.put(x,y,pixel);
             }
         }*/
+        Log.d("DBG", "invert");
         Mat blur = new Mat();
-        Imgproc.GaussianBlur(gray, blur, new Size(21, 21), 0, 0);
-
+        Imgproc.GaussianBlur(inv, blur, new Size(21, 21), 0, 0);
+        Log.d("DBG", "gaussianblur");
+        inv.release();
         Mat dst = new Mat();
-        Core.divide(gray, blur, dst, 256);
+        Imgproc.resize(blur, blur, new Size(width, height));
+        Imgproc.resize(gray, gray, new Size(width, height));
 
+        Core.divide(blur,gray,dst,256);
+
+        Log.d("DBG", "divide");
         Imgproc.cvtColor(dst, dst, Imgproc.COLOR_GRAY2BGR);
+        Imgproc.resize(dst, dst, new Size(width, height));
         return dst;
     }
 
     public Mat cartoon(Mat bgr) {
+        int height=bgr.height();
+        int width=bgr.width();
         Mat image = new Mat();
-        Imgproc.cvtColor(bgr, bgr, Imgproc.COLOR_BGR2RGB);
+        Imgproc.cvtColor(bgr, bgr, Imgproc.COLOR_RGBA2RGB);
         for (int i = 0; i < 2; i++) {
             Imgproc.pyrDown(bgr, image);
         }
+        bgr.release();
         Mat image_bi = new Mat();
         for (int j = 0; j < 7; j++) {
-            Imgproc.bilateralFilter(image, image_bi, 9, 9, 7);
+            Imgproc.bilateralFilter(image,image_bi,9,9,7);
         }
+        image.release();
         for (int i = 0; i < 2; i++) {
             Imgproc.pyrUp(image_bi, image_bi);
         }
@@ -383,18 +399,19 @@ public class Filters {
         Mat blur = new Mat();
         Imgproc.cvtColor(image_bi, gray, Imgproc.COLOR_RGB2GRAY);
         Imgproc.medianBlur(gray, blur, 7);
+        gray.release();
         Mat edge = new Mat();
         Imgproc.adaptiveThreshold(blur, edge, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 9, 2);
-
+        blur.release();
         Imgproc.cvtColor(edge, edge, Imgproc.COLOR_GRAY2RGB);
         Mat cartoon = new Mat();
         Core.bitwise_and(image_bi, edge, cartoon);
-
+        Log.d("DBG", "llega");
+        //Imgproc.cvtColor(cartoon, cartoon, Imgproc.COLOR_RGB2BGR);
         Imgproc.cvtColor(cartoon, cartoon, Imgproc.COLOR_RGB2BGR);
-
+        Imgproc.resize(cartoon,cartoon,new Size(width,height));
         return cartoon;
     }
-
 
 }
 

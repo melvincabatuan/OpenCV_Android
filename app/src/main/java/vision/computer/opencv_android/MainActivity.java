@@ -498,7 +498,8 @@ public class MainActivity extends AppCompatActivity
                 mBgr = F.sketch(mBgr);
 
             if (mPhotoType.contains(getResources().getString(R.string.menu_cartoon)))
-                mBgr = F.cartoon(mBgr);
+                mBgr = F.cartoon(rgba);
+
 
             if (post) {
                 Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA, 3);
@@ -511,6 +512,7 @@ public class MainActivity extends AppCompatActivity
             mIsPhotoPending = false;
             takePhoto();
         }
+
         if (post) {
             Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA);
             return rgba;
