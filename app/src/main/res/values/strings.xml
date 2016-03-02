@@ -23,7 +23,7 @@
     <string name="menu_distorsionC">Cojin</string>
     <string name="menu_poster">Poster Cross</string>
     <string name="menu_poster_Ellipse">Poster Ellipse</string>
-    <string name="menu_sketch">Sketch</string>
+    <string name="menu_bordeado">Bordeado</string>
     <string name="menu_cartoon">Cartoon</string>
     <string name="photo_delete_prompt_message">This photo is saved in your Gallery. Do you want to delete it?</string>
     <string name="photo_delete_prompt_title">Delete photo?</string>

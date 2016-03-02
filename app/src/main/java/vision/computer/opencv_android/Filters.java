@@ -7,6 +7,7 @@ import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
@@ -27,24 +28,23 @@ public class Filters {
     public Filters() {
     }
 
-    public static Mat gaussianSmooth(Mat src, double ro) {
-        int size = 5;
+    public static Mat gaussianSmooth(Mat src, int ro) {
+        int size = 5 * ro;
+        int offset = size / 2;
         Mat MorphKernel = new Mat();
         double coef = 0;
         double[][] res = new double[size][size];
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                res[i][j] = Math.pow(e, -((i * i + j * j) / (2 * ro * ro)));
-                coef += res[i][j];
+
+        for (int i = -offset; i < size - offset; i++) {
+            for (int j = -offset; j < size - offset; j++) {
+                res[i + offset][j + offset] = Math.pow(e, -((i * i + j * j) / (double)(2 * ro * ro)));
+                coef += res[i + offset][j + offset];
             }
         }
-        double c = coef / (size * size);
         for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                MorphKernel.put(i, j, res[i][j] * c);
-            }
+            for (int j = 0; j < size; j++)
+                MorphKernel.put(i, j, res[i][j] * (1/coef));
         }
-        //Applies the morfological operation MORPH_RECT to a MAT given a Kernel
         Imgproc.morphologyEx(src, src, Imgproc.MORPH_RECT, MorphKernel);
         return src;
     }
@@ -346,35 +346,16 @@ public class Filters {
         return output;
     }
 
-    public Mat sketch(Mat bgr) {
-        int height=bgr.height();
-        int width=bgr.width();
-        Mat gray = new Mat();
-        Imgproc.cvtColor(bgr, gray, Imgproc.COLOR_BGR2GRAY,3);
-        bgr.release();
-        Mat inv = new Mat();
-        Core.bitwise_not(gray,inv);
-        /*for (int x = 0; x < gray.rows(); ++x) {
-            for (int y = 0; y < gray.cols(); ++y) {
-                pixel = gray.get(x, y);
-                pixel[0]=255-pixel[0];
-                gray.put(x,y,pixel);
-            }
-        }*/
-        Log.d("DBG", "invert");
-        Mat blur = new Mat();
-        Imgproc.GaussianBlur(inv, blur, new Size(21, 21), 0, 0);
-        Log.d("DBG", "gaussianblur");
-        inv.release();
+    public Mat bordeado(Mat bgr) {
         Mat dst = new Mat();
-        Imgproc.resize(blur, blur, new Size(width, height));
-        Imgproc.resize(gray, gray, new Size(width, height));
+        Mat inv = new Mat();
+        Imgproc.cvtColor(bgr, bgr, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.Sobel(bgr, inv, CvType.CV_32F, 1, 0);
 
-        Core.divide(blur,gray,dst,256);
-
-        Log.d("DBG", "divide");
+        Core.MinMaxLocResult res =Core.minMaxLoc(inv);
+        inv.convertTo(dst, CvType.CV_8U, 255.0 / (res.maxVal - res.minVal), -res.minVal * 255.0 / (res.maxVal - res.minVal));
+        Core.bitwise_not(dst,dst);
         Imgproc.cvtColor(dst, dst, Imgproc.COLOR_GRAY2BGR);
-        Imgproc.resize(dst, dst, new Size(width, height));
         return dst;
     }
 
@@ -382,7 +363,7 @@ public class Filters {
         int height=bgr.height();
         int width=bgr.width();
         Mat image = new Mat();
-        Imgproc.cvtColor(bgr, bgr, Imgproc.COLOR_RGBA2RGB);
+        Imgproc.cvtColor(bgr, bgr, Imgproc.COLOR_BGR2RGB);
         for (int i = 0; i < 2; i++) {
             Imgproc.pyrDown(bgr, image);
         }
@@ -406,7 +387,6 @@ public class Filters {
         Imgproc.cvtColor(edge, edge, Imgproc.COLOR_GRAY2RGB);
         Mat cartoon = new Mat();
         Core.bitwise_and(image_bi, edge, cartoon);
-        Log.d("DBG", "llega");
         //Imgproc.cvtColor(cartoon, cartoon, Imgproc.COLOR_RGB2BGR);
         Imgproc.cvtColor(cartoon, cartoon, Imgproc.COLOR_RGB2BGR);
         Imgproc.resize(cartoon,cartoon,new Size(width,height));

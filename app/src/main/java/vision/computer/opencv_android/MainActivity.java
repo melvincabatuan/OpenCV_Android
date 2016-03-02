@@ -44,7 +44,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 // Use the deprecated Camera class.
 @SuppressWarnings("deprecation")
@@ -69,6 +71,7 @@ public class MainActivity extends AppCompatActivity
     ArrayList<String> imageTypes = new ArrayList<String>();
     // The OpenCV loader callback.
     Dialog mBottomSheetDialog;
+    AlertDialog levelDialog = null;
     // The index of the active camera.
     private int mCameraIndex;
     // The index of the active image size.
@@ -87,8 +90,6 @@ public class MainActivity extends AppCompatActivity
     private CascadeClassifier cascadeClassifier;
     private Mat grayscaleImage;
     private int absoluteFaceSize;
-    AlertDialog levelDialog=null;
-
     private BaseLoaderCallback mLoaderCallback =
             new BaseLoaderCallback(this) {
                 @Override
@@ -110,11 +111,14 @@ public class MainActivity extends AppCompatActivity
         mPhotoType = 3 --> Alien effect
         mPhotoType = 4 --> Poster effect
         mPhotoType = 5 --> Distorsion effect */
-    private ArrayList<String> mPhotoType = new ArrayList<String>();
+    private Map<String, Integer> mPhotoType = new HashMap<String, Integer>();
 
     private int mAdjustLevel = -1;
-    private int mSelectionValue = 1;
+
+    private String mSelectionValue = "";
+
     private int mColor = 1;
+
 
     private void initializeOpenCVDependencies() {
         try {
@@ -166,7 +170,7 @@ public class MainActivity extends AppCompatActivity
         imageTypes.add(getResources().getString(R.string.menu_sepia));
         imageTypes.add(getResources().getString(R.string.menu_smooth));
         imageTypes.add(getResources().getString(R.string.menu_gaussian));
-        imageTypes.add(getResources().getString(R.string.menu_sketch));
+        imageTypes.add(getResources().getString(R.string.menu_bordeado));
         imageTypes.add(getResources().getString(R.string.menu_cartoon));
 
         final Window window = getWindow();
@@ -293,94 +297,67 @@ public class MainActivity extends AppCompatActivity
             return true;
         }
         if (item.getGroupId() == MENU_GROUP_ID_TYPE) {
+            mSelectionValue = (String) item.getTitle();
             if (item.getTitle().equals(getResources().getString(R.string.menu_normal)))
                 mPhotoType.clear();
 
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_clahe)))
-                if (mPhotoType.contains(getResources().getString(R.string.menu_clahe)))
-                    mPhotoType.remove(getResources().getString(R.string.menu_clahe));
-                else
-                    mPhotoType.add(getResources().getString(R.string.menu_clahe));
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_clahe))) {
+                if (!mPhotoType.containsKey(getResources().getString(R.string.menu_clahe)))
+                    mPhotoType.put(getResources().getString(R.string.menu_clahe), 1);
 
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_heist)))
-                if (mPhotoType.contains(getResources().getString(R.string.menu_clahe)))
-                    mPhotoType.remove(getResources().getString(R.string.menu_clahe));
-                else
-                    mPhotoType.add(getResources().getString(R.string.menu_clahe));
+            } else if (item.getTitle().equals(getResources().getString(R.string.menu_heist))) {
+                if (!mPhotoType.containsKey(getResources().getString(R.string.menu_clahe)))
+                    mPhotoType.put(getResources().getString(R.string.menu_clahe), 1);
 
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_alien)))
-                if (mPhotoType.contains(getResources().getString(R.string.menu_alien)))
-                    mPhotoType.remove(getResources().getString(R.string.menu_alien));
-                else{
-                    mPhotoType.add(getResources().getString(R.string.menu_alien));
-                    displayColorDialog();
-                }
+            } else if (item.getTitle().equals(getResources().getString(R.string.menu_alien))) {
+                if (!mPhotoType.containsKey(getResources().getString(R.string.menu_alien)))
+                    mPhotoType.put(getResources().getString(R.string.menu_alien), 1);
 
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_alienHSV)))
-                if (mPhotoType.contains(getResources().getString(R.string.menu_alienHSV)))
-                    mPhotoType.remove(getResources().getString(R.string.menu_alienHSV));
-                else
-                    mPhotoType.add(getResources().getString(R.string.menu_alienHSV));
+            } else if (item.getTitle().equals(getResources().getString(R.string.menu_alienHSV))) {
+                if (mPhotoType.containsKey(getResources().getString(R.string.menu_alienHSV)))
+                    mPhotoType.put(getResources().getString(R.string.menu_alienHSV), 1);
 
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_poster)))
-                if (mPhotoType.contains(getResources().getString(R.string.menu_poster)))
-                    mPhotoType.remove(getResources().getString(R.string.menu_poster));
-                else
-                    mPhotoType.add(getResources().getString(R.string.menu_poster));
+            } else if (item.getTitle().equals(getResources().getString(R.string.menu_poster))) {
+                if (!mPhotoType.containsKey(getResources().getString(R.string.menu_poster)))
+                    mPhotoType.put(getResources().getString(R.string.menu_poster), 1);
 
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_poster_Ellipse)))
-                if (mPhotoType.contains(getResources().getString(R.string.menu_poster_Ellipse)))
-                    mPhotoType.remove(getResources().getString(R.string.menu_poster_Ellipse));
-                else
-                    mPhotoType.add(getResources().getString(R.string.menu_poster_Ellipse));
+            } else if (item.getTitle().equals(getResources().getString(R.string.menu_poster_Ellipse))) {
+                if (!mPhotoType.containsKey(getResources().getString(R.string.menu_poster_Ellipse)))
+                    mPhotoType.put(getResources().getString(R.string.menu_poster_Ellipse), 1);
 
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_posterContrast)))
-                if (mPhotoType.contains(getResources().getString(R.string.menu_posterContrast)))
-                    mPhotoType.remove(getResources().getString(R.string.menu_posterContrast));
-                else
-                    mPhotoType.add(getResources().getString(R.string.menu_posterContrast));
+            } else if (item.getTitle().equals(getResources().getString(R.string.menu_posterContrast))) {
+                if (!mPhotoType.containsKey(getResources().getString(R.string.menu_posterContrast)))
+                    mPhotoType.put(getResources().getString(R.string.menu_posterContrast), 1);
 
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionB)))
-                if (mPhotoType.contains(getResources().getString(R.string.menu_distorsionB)))
-                    mPhotoType.remove(getResources().getString(R.string.menu_distorsionB));
-                else
-                    mPhotoType.add(getResources().getString(R.string.menu_distorsionB));
+            } else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionB))) {
+                if (!mPhotoType.containsKey(getResources().getString(R.string.menu_distorsionB)))
+                    mPhotoType.put(getResources().getString(R.string.menu_distorsionB), 1);
 
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionC)))
-                if (mPhotoType.contains(getResources().getString(R.string.menu_distorsionC)))
-                    mPhotoType.remove(getResources().getString(R.string.menu_distorsionC));
-                else
-                    mPhotoType.add(getResources().getString(R.string.menu_distorsionC));
+            } else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionC))) {
+                if (!mPhotoType.containsKey(getResources().getString(R.string.menu_distorsionC)))
+                    mPhotoType.put(getResources().getString(R.string.menu_distorsionC), 1);
 
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_sepia)))
-                if (mPhotoType.contains(getResources().getString(R.string.menu_sepia)))
-                    mPhotoType.remove(getResources().getString(R.string.menu_sepia));
-                else
-                    mPhotoType.add(getResources().getString(R.string.menu_sepia));
+            } else if (item.getTitle().equals(getResources().getString(R.string.menu_sepia))) {
+                if (!mPhotoType.containsKey(getResources().getString(R.string.menu_sepia)))
+                    mPhotoType.put(getResources().getString(R.string.menu_sepia), 1);
 
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_smooth)))
-                if (mPhotoType.contains(getResources().getString(R.string.menu_smooth)))
-                    mPhotoType.remove(getResources().getString(R.string.menu_smooth));
-                else
-                    mPhotoType.add(getResources().getString(R.string.menu_smooth));
+            } else if (item.getTitle().equals(getResources().getString(R.string.menu_smooth))) {
+                if (!mPhotoType.containsKey(getResources().getString(R.string.menu_smooth)))
+                    mPhotoType.put(getResources().getString(R.string.menu_smooth), 1);
 
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_gaussian)))
-                if (mPhotoType.contains(getResources().getString(R.string.menu_gaussian)))
-                    mPhotoType.remove(getResources().getString(R.string.menu_gaussian));
-                else
-                    mPhotoType.add(getResources().getString(R.string.menu_gaussian));
+            } else if (item.getTitle().equals(getResources().getString(R.string.menu_gaussian))) {
+                if (!mPhotoType.containsKey(getResources().getString(R.string.menu_gaussian)))
+                    mPhotoType.put(getResources().getString(R.string.menu_gaussian), 1);
 
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_sketch)))
-                if (mPhotoType.contains(getResources().getString(R.string.menu_sketch)))
-                    mPhotoType.remove(getResources().getString(R.string.menu_sketch));
-                else
-                    mPhotoType.add(getResources().getString(R.string.menu_sketch));
+            } else if (item.getTitle().equals(getResources().getString(R.string.menu_bordeado))) {
+                if (!mPhotoType.containsKey(getResources().getString(R.string.menu_bordeado)))
+                    mPhotoType.put(getResources().getString(R.string.menu_bordeado), 1);
 
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_cartoon)))
-                if (mPhotoType.contains(getResources().getString(R.string.menu_cartoon)))
-                    mPhotoType.remove(getResources().getString(R.string.menu_cartoon));
-                else
-                    mPhotoType.add(getResources().getString(R.string.menu_cartoon));
+            } else if (item.getTitle().equals(getResources().getString(R.string.menu_cartoon))) {
+                if (!mPhotoType.containsKey(getResources().getString(R.string.menu_cartoon)))
+                    mPhotoType.put(getResources().getString(R.string.menu_cartoon), 1);
+            }
+
             return true;
         }
         Snackbar snackbar;
@@ -393,17 +370,33 @@ public class MainActivity extends AppCompatActivity
 
                 return true;
             case R.id.menu_upwards:
-                mSelectionValue++;
-                snackbar = Snackbar.make(findViewById(android.R.id.content), "Adjust level: " + mSelectionValue, Snackbar.LENGTH_LONG);
-                snackbar.show();
-                return true;
-            case R.id.menu_downwards:
-                if (mSelectionValue > 1) {
-                    mSelectionValue--;
-                    snackbar = Snackbar.make(findViewById(android.R.id.content), "Adjust level: " + mSelectionValue, Snackbar.LENGTH_LONG);
+                if (!mPhotoType.isEmpty()) {
+                    int value = mPhotoType.get(mSelectionValue);
+                    mPhotoType.remove(mSelectionValue);
+                    value++;
+                    mPhotoType.put(mSelectionValue, value);
+                    snackbar = Snackbar.make(findViewById(android.R.id.content), "Adjust level " + mSelectionValue + " : " + value, Snackbar.LENGTH_LONG);
                     snackbar.show();
                 } else {
-                    snackbar = Snackbar.make(findViewById(android.R.id.content), "Adjust level cannot be lower", Snackbar.LENGTH_LONG);
+                    snackbar = Snackbar.make(findViewById(android.R.id.content), "No effects applied", Snackbar.LENGTH_LONG);
+                    snackbar.show();
+                }
+                return true;
+            case R.id.menu_downwards:
+                if (!mPhotoType.isEmpty()) {
+                    int value = mPhotoType.get(mSelectionValue);
+                    if (value > 1) {
+                        mPhotoType.remove(mSelectionValue);
+                        value--;
+                        mPhotoType.put(mSelectionValue, value);
+                        snackbar = Snackbar.make(findViewById(android.R.id.content), "Adjust level " + mSelectionValue + " : " + value, Snackbar.LENGTH_LONG);
+                        snackbar.show();
+                    } else {
+                        snackbar = Snackbar.make(findViewById(android.R.id.content), "Adjust level " + mPhotoType + " cannot be lower", Snackbar.LENGTH_LONG);
+                        snackbar.show();
+                    }
+                } else {
+                    snackbar = Snackbar.make(findViewById(android.R.id.content), "No effects applied", Snackbar.LENGTH_LONG);
                     snackbar.show();
                 }
                 return true;
@@ -411,22 +404,22 @@ public class MainActivity extends AppCompatActivity
                 return super.onOptionsItemSelected(item);
         }
     }
-    public void displayColorDialog(){
-        final CharSequence[] items = {"Blue","Green","Red"};
+
+    public void displayColorDialog() {
+        final CharSequence[] items = {"Blue", "Green", "Red"};
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Select the color");
         builder.setSingleChoiceItems(items, -1, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int item) {
-                switch(item)
-                {
+                switch (item) {
                     case 0:
-                        mColor=0;
+                        mColor = 0;
                         break;
                     case 1:
-                        mColor=1;
+                        mColor = 1;
                         break;
                     case 2:
-                        mColor=2;
+                        mColor = 2;
                         break;
                 }
                 levelDialog.dismiss();
@@ -456,50 +449,49 @@ public class MainActivity extends AppCompatActivity
         Filters F = new Filters();
         Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
         if (mPhotoType.size() > 0) {
-            if (mPhotoType.contains(getResources().getString(R.string.menu_clahe)))
-                mBgr = F.clahe(mBgr, mSelectionValue);
+            if (mPhotoType.containsKey(getResources().getString(R.string.menu_clahe)))
+                mBgr = F.clahe(mBgr, mPhotoType.get(getResources().getString(R.string.menu_clahe)));
 
-            if (mPhotoType.contains(getResources().getString(R.string.menu_heist)))
+            if (mPhotoType.containsKey(getResources().getString(R.string.menu_heist)))
                 mBgr = F.histEqual(mBgr);
 
-            if (mPhotoType.contains(getResources().getString(R.string.menu_alien)))
-                mBgr = F.getSkin(mBgr,mColor);
+            if (mPhotoType.containsKey(getResources().getString(R.string.menu_alien)))
+                mBgr = F.getSkin(mBgr, mPhotoType.get(getResources().getString(R.string.menu_alien))%3);
 
-            if (mPhotoType.contains(getResources().getString(R.string.menu_alienHSV))) {
+            if (mPhotoType.containsKey(getResources().getString(R.string.menu_alienHSV))) {
                 mBgr = F.alienHSV(mBgr);
                 post = false;
             }
+            if (mPhotoType.containsKey(getResources().getString(R.string.menu_poster)))
+                mBgr = F.poster(mBgr, mPhotoType.get(getResources().getString(R.string.menu_poster)), 0);
 
-            if (mPhotoType.contains(getResources().getString(R.string.menu_poster)))
-                mBgr = F.poster(mBgr, mSelectionValue, 0);
+            if (mPhotoType.containsKey(getResources().getString(R.string.menu_poster_Ellipse)))
+                mBgr = F.poster(mBgr, mPhotoType.get(getResources().getString(R.string.menu_poster_Ellipse)), 1);
 
-            if (mPhotoType.contains(getResources().getString(R.string.menu_poster_Ellipse)))
-                mBgr = F.poster(mBgr, mSelectionValue, 1);
-
-            if (mPhotoType.contains(getResources().getString(R.string.menu_posterContrast)))
+            if (mPhotoType.containsKey(getResources().getString(R.string.menu_posterContrast)))
                 mBgr = F.poster2(mBgr, 1);
 
-            if (mPhotoType.contains(getResources().getString(R.string.menu_distorsionB)))
-                mBgr = F.distorsionBarril(mBgr, -mSelectionValue);
+            if (mPhotoType.containsKey(getResources().getString(R.string.menu_distorsionB)))
+                mBgr = F.distorsionBarril(mBgr, -mPhotoType.get(getResources().getString(R.string.menu_distorsionB)));
 
-            if (mPhotoType.contains(getResources().getString(R.string.menu_distorsionC)))
-                mBgr = F.distorsionBarril(mBgr, mSelectionValue);
+            if (mPhotoType.containsKey(getResources().getString(R.string.menu_distorsionC)))
+                mBgr = F.distorsionBarril(mBgr, mPhotoType.get(getResources().getString(R.string.menu_distorsionC)));
 
-            if (mPhotoType.contains(getResources().getString(R.string.menu_sepia)))
-                mBgr = F.sepia(mBgr, mSelectionValue);
+            if (mPhotoType.containsKey(getResources().getString(R.string.menu_sepia)))
+                mBgr = F.sepia(mBgr, mPhotoType.get(getResources().getString(R.string.menu_sepia)));
 
-            if (mPhotoType.contains(getResources().getString(R.string.menu_smooth)))
+            if (mPhotoType.containsKey(getResources().getString(R.string.menu_smooth)))
                 mBgr = F.boxSmooth(mBgr);
 
-            if (mPhotoType.contains(getResources().getString(R.string.menu_gaussian)))
-                mBgr = F.gaussianSmooth(mBgr, mSelectionValue);
+            if (mPhotoType.containsKey(getResources().getString(R.string.menu_gaussian)))
+                mBgr = F.gaussianSmooth(mBgr, mPhotoType.get(getResources().getString(R.string.menu_gaussian)));
 
-            if (mPhotoType.contains(getResources().getString(R.string.menu_sketch)))
-                mBgr = F.sketch(mBgr);
+            if (mPhotoType.containsKey(getResources().getString(R.string.menu_bordeado))){
+                mBgr = F.bordeado(mBgr);
+            }
 
-            if (mPhotoType.contains(getResources().getString(R.string.menu_cartoon)))
-                mBgr = F.cartoon(rgba);
-
+            if (mPhotoType.containsKey(getResources().getString(R.string.menu_cartoon)))
+                mBgr = F.cartoon(mBgr);
 
             if (post) {
                 Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA, 3);
