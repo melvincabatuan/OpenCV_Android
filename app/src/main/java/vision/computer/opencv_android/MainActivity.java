@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
@@ -16,6 +17,7 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Images;
 import android.support.design.widget.Snackbar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -69,6 +71,7 @@ public class MainActivity extends AppCompatActivity
     ArrayList<String> imageTypes = new ArrayList<String>();
     // The OpenCV loader callback.
     Dialog mBottomSheetDialog;
+    AlertDialog levelDialog = null;
     // The index of the active camera.
     private int mCameraIndex;
     // The index of the active image size.
@@ -87,7 +90,6 @@ public class MainActivity extends AppCompatActivity
     private CascadeClassifier cascadeClassifier;
     private Mat grayscaleImage;
     private int absoluteFaceSize;
-
     private BaseLoaderCallback mLoaderCallback =
             new BaseLoaderCallback(this) {
                 @Override
@@ -112,7 +114,11 @@ public class MainActivity extends AppCompatActivity
     private Map<String, Integer> mPhotoType = new HashMap<String, Integer>();
 
     private int mAdjustLevel = -1;
+
     private String mSelectionValue = "";
+
+    private int mColor = 1;
+
 
     private void initializeOpenCVDependencies() {
         try {
@@ -399,6 +405,31 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    public void displayColorDialog() {
+        final CharSequence[] items = {"Blue", "Green", "Red"};
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select the color");
+        builder.setSingleChoiceItems(items, -1, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int item) {
+                switch (item) {
+                    case 0:
+                        mColor = 0;
+                        break;
+                    case 1:
+                        mColor = 1;
+                        break;
+                    case 2:
+                        mColor = 2;
+                        break;
+                }
+                levelDialog.dismiss();
+            }
+        });
+
+        levelDialog = builder.create();
+        levelDialog.show();
+    }
+
     @Override
     public void onCameraViewStarted(final int width,
                                     final int height) {
@@ -425,7 +456,7 @@ public class MainActivity extends AppCompatActivity
                 mBgr = F.histEqual(mBgr);
 
             if (mPhotoType.containsKey(getResources().getString(R.string.menu_alien)))
-                mBgr = F.getSkin(mBgr);
+                mBgr = F.getSkin(mBgr, mColor);
 
             if (mPhotoType.containsKey(getResources().getString(R.string.menu_alienHSV))) {
                 mBgr = F.alienHSV(mBgr);

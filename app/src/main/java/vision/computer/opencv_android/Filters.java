@@ -153,7 +153,7 @@ public class Filters {
         return (H < 25) || (H > 230);
     }
 
-    public Mat getSkin(Mat src) {
+    public Mat getSkin(Mat src,int color) {
         // allocate the result matrix
         Mat dst = src.clone();
         byte[] cblack = new byte[src.channels()];
@@ -210,10 +210,11 @@ public class Filters {
                 if ((a && b && c)) {
                     double[] pixeldst = new double[3];
                     pixeldst[0] = B;
-                    pixeldst[1] = G + 100;
+                    pixeldst[1] = G;
                     pixeldst[2] = R;
-                    if (pixeldst[1] > 255)
-                        pixeldst[1] = 255;
+                    pixeldst[color]+=100;
+                    if (pixeldst[color] > 255)
+                        pixeldst[color] = 255;
                     dst.put(i, j, pixeldst);
                 } else {
                 }
