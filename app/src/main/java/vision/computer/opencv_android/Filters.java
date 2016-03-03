@@ -42,15 +42,15 @@ public class Filters {
                 MorphKernel.put(i, j, res[i][j] * (1/coef));
         }*/
         //Imgproc.morphologyEx(src, src, Imgproc.MORPH_RECT, MorphKernel);
-        Size size = new Size(5*ro-7*ro,5*ro-7*ro);
-        Imgproc.GaussianBlur(src,src,size,ro,ro);
+        Size size = new Size(5 * ro - 7 * ro, 5 * ro - 7 * ro);
+        Imgproc.GaussianBlur(src, src, size, ro, ro);
 
         return src;
     }
 
-    public static Mat medianBlur(Mat src){
+    public static Mat medianBlur(Mat src) {
         int size = 5;
-        Imgproc.medianBlur(src,src,size);
+        Imgproc.medianBlur(src, src, size);
         return src;
     }
 
@@ -65,7 +65,7 @@ public class Filters {
 
         //Applies the morfological operation MORPH_RECT to a MAT given a Kernel
         Imgproc.morphologyEx(src, src, Imgproc.MORPH_RECT, MorphKernel);*/
-        Imgproc.boxFilter(src,src,-1,new Size(3,3));
+        Imgproc.boxFilter(src, src, -1, new Size(3, 3));
         return src;
 
     }
@@ -164,7 +164,7 @@ public class Filters {
         return (H < 25) || (H > 230);
     }
 
-    public Mat getSkin(Mat src,int color) {
+    public Mat getSkin(Mat src, int color) {
         // allocate the result matrix
         Mat dst = src.clone();
         byte[] cblack = new byte[src.channels()];
@@ -223,7 +223,7 @@ public class Filters {
                     pixeldst[0] = B;
                     pixeldst[1] = G;
                     pixeldst[2] = R;
-                    pixeldst[color]+=100;
+                    pixeldst[color] += 100;
                     if (pixeldst[color] > 255)
                         pixeldst[color] = 255;
                     dst.put(i, j, pixeldst);
@@ -243,15 +243,20 @@ public class Filters {
     }
 
     public Mat poster2(Mat bgr, int index) {
-        final int MAXCOLOR = 255;
-
+        int MAXCOLOR = 255;
+        int colorCoef = (MAXCOLOR / index)+1;
+        ArrayList<Integer> splitted = new ArrayList<Integer>();
+        ;
+        for (int w = 0; w <= index; w++) {
+            int value = (MAXCOLOR / index * w);
+            splitted.add(value);
+        }
         for (int i = 0; i < bgr.rows(); i++) {
             for (int j = 0; j < bgr.cols(); j++) {
                 double[] pixel = bgr.get(i, j);
                 for (int c = 0; c < bgr.channels(); c++) {
-                    for (int x = 0; x < index; x++) {
-                        pixel[c] = pixelMaximization(pixel[c], MAXCOLOR, 0);
-                    }
+                    pixel[c] = pixelMaximization(pixel[c], splitted.get((int) (pixel[c] / colorCoef + 1)),
+                            splitted.get((int) (pixel[c] / colorCoef)));
                 }
                 bgr.put(i, j, pixel);
             }
@@ -361,7 +366,7 @@ public class Filters {
         Imgproc.cvtColor(bgr, bgr, Imgproc.COLOR_BGR2GRAY);
         Imgproc.Sobel(bgr, inv, CvType.CV_32F, 1, 0);
 
-        Core.MinMaxLocResult res =Core.minMaxLoc(inv);
+        Core.MinMaxLocResult res = Core.minMaxLoc(inv);
         inv.convertTo(dst, CvType.CV_8U, 255.0 / (res.maxVal - res.minVal), -res.minVal * 255.0 / (res.maxVal - res.minVal));
         Core.bitwise_not(dst, dst);
         Imgproc.cvtColor(dst, dst, Imgproc.COLOR_GRAY2BGR);
@@ -369,8 +374,8 @@ public class Filters {
     }
 
     public Mat cartoon(Mat bgr) {
-        int height=bgr.height();
-        int width=bgr.width();
+        int height = bgr.height();
+        int width = bgr.width();
         Mat image = new Mat();
         Imgproc.cvtColor(bgr, bgr, Imgproc.COLOR_BGR2RGB);
         for (int i = 0; i < 2; i++) {
@@ -379,7 +384,7 @@ public class Filters {
         bgr.release();
         Mat image_bi = new Mat();
         for (int j = 0; j < 7; j++) {
-            Imgproc.bilateralFilter(image,image_bi,9,9,7);
+            Imgproc.bilateralFilter(image, image_bi, 9, 9, 7);
         }
         image.release();
         for (int i = 0; i < 2; i++) {

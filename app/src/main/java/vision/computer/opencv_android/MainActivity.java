@@ -474,7 +474,7 @@ public class MainActivity extends AppCompatActivity
                 mBgr = F.poster(mBgr, mPhotoType.get(getResources().getString(R.string.menu_poster_Ellipse)), 1);
 
             if (mPhotoType.containsKey(getResources().getString(R.string.menu_posterContrast)))
-                mBgr = F.poster2(mBgr, 1);
+                mBgr = F.poster2(mBgr, mPhotoType.get(getResources().getString(R.string.menu_posterContrast)));
 
             if (mPhotoType.containsKey(getResources().getString(R.string.menu_distorsionB)))
                 mBgr = F.distorsionBarril(mBgr, -mPhotoType.get(getResources().getString(R.string.menu_distorsionB)));
