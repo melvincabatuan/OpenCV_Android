@@ -170,6 +170,7 @@ public class MainActivity extends AppCompatActivity
         imageTypes.add(getResources().getString(R.string.menu_sepia));
         imageTypes.add(getResources().getString(R.string.menu_smooth));
         imageTypes.add(getResources().getString(R.string.menu_gaussian));
+        imageTypes.add(getResources().getString(R.string.menu_median));
         imageTypes.add(getResources().getString(R.string.menu_bordeado));
         imageTypes.add(getResources().getString(R.string.menu_cartoon));
 
@@ -333,6 +334,10 @@ public class MainActivity extends AppCompatActivity
                 if (!mPhotoType.containsKey(getResources().getString(R.string.menu_distorsionB)))
                     mPhotoType.put(getResources().getString(R.string.menu_distorsionB), 1);
 
+            } else if (item.getTitle().equals(getResources().getString(R.string.menu_median))) {
+                if (!mPhotoType.containsKey(getResources().getString(R.string.menu_median)))
+                    mPhotoType.put(getResources().getString(R.string.menu_median), 1);
+
             } else if (item.getTitle().equals(getResources().getString(R.string.menu_distorsionC))) {
                 if (!mPhotoType.containsKey(getResources().getString(R.string.menu_distorsionC)))
                     mPhotoType.put(getResources().getString(R.string.menu_distorsionC), 1);
@@ -456,7 +461,7 @@ public class MainActivity extends AppCompatActivity
                 mBgr = F.histEqual(mBgr);
 
             if (mPhotoType.containsKey(getResources().getString(R.string.menu_alien)))
-                mBgr = F.getSkin(mBgr, mPhotoType.get(getResources().getString(R.string.menu_alien))%3);
+                mBgr = F.getSkin(mBgr, mPhotoType.get(getResources().getString(R.string.menu_alien)) % 3);
 
             if (mPhotoType.containsKey(getResources().getString(R.string.menu_alienHSV))) {
                 mBgr = F.alienHSV(mBgr);
@@ -481,12 +486,15 @@ public class MainActivity extends AppCompatActivity
                 mBgr = F.sepia(mBgr, mPhotoType.get(getResources().getString(R.string.menu_sepia)));
 
             if (mPhotoType.containsKey(getResources().getString(R.string.menu_smooth)))
-                mBgr = F.boxSmooth(mBgr);
+                mBgr = F.boxBlur(mBgr);
+
+            if (mPhotoType.containsKey(getResources().getString(R.string.menu_median)))
+                mBgr = F.medianBlur(mBgr);
 
             if (mPhotoType.containsKey(getResources().getString(R.string.menu_gaussian)))
                 mBgr = F.gaussianSmooth(mBgr, mPhotoType.get(getResources().getString(R.string.menu_gaussian)));
 
-            if (mPhotoType.containsKey(getResources().getString(R.string.menu_bordeado))){
+            if (mPhotoType.containsKey(getResources().getString(R.string.menu_bordeado))) {
                 mBgr = F.bordeado(mBgr);
             }
 

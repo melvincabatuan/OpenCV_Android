@@ -21,6 +21,7 @@
     <string name="menu_gaussian">Gaussian filter</string>
     <string name="menu_distorsionB">Barril</string>
     <string name="menu_distorsionC">Cojin</string>
+    <string name="menu_median">Median filter</string>
     <string name="menu_poster">Poster Cross</string>
     <string name="menu_poster_Ellipse">Poster Ellipse</string>
     <string name="menu_bordeado">Bordeado</string>

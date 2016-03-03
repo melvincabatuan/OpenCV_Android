@@ -1,13 +1,9 @@
 package vision.computer.opencv_android;
 
-import android.graphics.Bitmap;
-import android.util.Log;
-
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
-import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
@@ -29,53 +25,66 @@ public class Filters {
     }
 
     public static Mat gaussianSmooth(Mat src, int ro) {
-        int size = 5 * ro;
-        int offset = size / 2;
-        Mat MorphKernel = new Mat();
-        double coef = 0;
+        /*Mat MorphKernel = new Mat();
+        double pi = 3.1416;
+        double coef = (1/(2*pi*ro*ro));
         double[][] res = new double[size][size];
 
         for (int i = -offset; i < size - offset; i++) {
             for (int j = -offset; j < size - offset; j++) {
-                res[i + offset][j + offset] = Math.pow(e, -((i * i + j * j) / (double)(2 * ro * ro)));
-                coef += res[i + offset][j + offset];
+                //res[i + offset][j + offset] = Math.pow(e, -((i * i + j * j) / (double)(2 * ro * ro)));
+                //coef += res[i + offset][j + offset];
+                MorphKernel.put(i, j, Math.pow(e, -((i * i + j * j) / (double)(2 * ro * ro))) * coef);
             }
         }
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++)
                 MorphKernel.put(i, j, res[i][j] * (1/coef));
-        }
-        Imgproc.morphologyEx(src, src, Imgproc.MORPH_RECT, MorphKernel);
+        }*/
+        //Imgproc.morphologyEx(src, src, Imgproc.MORPH_RECT, MorphKernel);
+        Size size = new Size(5*ro-7*ro,5*ro-7*ro);
+        Imgproc.GaussianBlur(src,src,size,ro,ro);
+
         return src;
     }
 
-    public static Mat boxSmooth(Mat src) {
-        Mat MorphKernel = new Mat();
+    public static Mat medianBlur(Mat src){
+        int size = 5;
+        Imgproc.medianBlur(src,src,size);
+        return src;
+    }
+
+    public static Mat boxBlur(Mat src) {
+       /* Mat MorphKernel = new Mat();
         int size = 5;
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                 MorphKernel.put(i, j, 1);
             }
         }
+
         //Applies the morfological operation MORPH_RECT to a MAT given a Kernel
-        Imgproc.morphologyEx(src, src, Imgproc.MORPH_RECT, MorphKernel);
+        Imgproc.morphologyEx(src, src, Imgproc.MORPH_RECT, MorphKernel);*/
+        Imgproc.boxFilter(src,src,-1,new Size(3,3));
         return src;
+
     }
 
     public Mat sepia(Mat bgr, int depth) {
-        // image size
+        // Sepia values
         double red = 60;
         double green = 35;
         double blue = 0;
+
         int rows = bgr.rows();
         int cols = bgr.cols();
+
         // constant grayscale
         final double GS_RED = 0.3;
         final double GS_GREEN = 0.59;
         final double GS_BLUE = 0.11;
-        // color information
+
         double[] pixel = new double[3];
-        Log.d("DBG", "channels: " + bgr.channels());
 
         // scan through all pixels
         for (int x = 0; x < rows; ++x) {
@@ -354,7 +363,7 @@ public class Filters {
 
         Core.MinMaxLocResult res =Core.minMaxLoc(inv);
         inv.convertTo(dst, CvType.CV_8U, 255.0 / (res.maxVal - res.minVal), -res.minVal * 255.0 / (res.maxVal - res.minVal));
-        Core.bitwise_not(dst,dst);
+        Core.bitwise_not(dst, dst);
         Imgproc.cvtColor(dst, dst, Imgproc.COLOR_GRAY2BGR);
         return dst;
     }
@@ -389,7 +398,7 @@ public class Filters {
         Core.bitwise_and(image_bi, edge, cartoon);
         //Imgproc.cvtColor(cartoon, cartoon, Imgproc.COLOR_RGB2BGR);
         Imgproc.cvtColor(cartoon, cartoon, Imgproc.COLOR_RGB2BGR);
-        Imgproc.resize(cartoon,cartoon,new Size(width,height));
+        Imgproc.resize(cartoon, cartoon, new Size(width, height));
         return cartoon;
     }
 
