@@ -3,6 +3,7 @@ package vision.computer.opencv_android;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfRect;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
@@ -43,14 +44,14 @@ public class Filters {
         }*/
         //Imgproc.morphologyEx(src, src, Imgproc.MORPH_RECT, MorphKernel);
         Size size = new Size(5*ro-7*ro,5*ro-7*ro);
-        Imgproc.GaussianBlur(src,src,size,ro,ro);
+        Imgproc.GaussianBlur(src, src, size, ro, ro);
 
         return src;
     }
 
     public static Mat medianBlur(Mat src){
         int size = 5;
-        Imgproc.medianBlur(src,src,size);
+        Imgproc.medianBlur(src, src, size);
         return src;
     }
 
@@ -65,7 +66,7 @@ public class Filters {
 
         //Applies the morfological operation MORPH_RECT to a MAT given a Kernel
         Imgproc.morphologyEx(src, src, Imgproc.MORPH_RECT, MorphKernel);*/
-        Imgproc.boxFilter(src,src,-1,new Size(3,3));
+        Imgproc.boxFilter(src, src, -1, new Size(3, 3));
         return src;
 
     }
@@ -400,6 +401,46 @@ public class Filters {
         Imgproc.cvtColor(cartoon, cartoon, Imgproc.COLOR_RGB2BGR);
         Imgproc.resize(cartoon, cartoon, new Size(width, height));
         return cartoon;
+    }
+
+    public Mat regularTresholding(Mat input){
+        Mat dst = new Mat();
+        Imgproc.threshold(input,dst,127,255,Imgproc.THRESH_BINARY);
+        return dst;
+    }
+    public Mat otsuThresholding(Mat input, boolean gaussian){
+        Mat dst = new Mat();
+        if (gaussian)
+            Imgproc.GaussianBlur(input,input,new Size(5,5),0);
+
+        Imgproc.threshold(input,dst,0,255,Imgproc.THRESH_BINARY+Imgproc.THRESH_OTSU);
+
+        return dst;
+    }
+
+    public Mat contours (Mat input){
+        Mat dst = new Mat();
+        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        Mat hierarchy = new Mat();
+        Imgproc.Canny(input, dst, 50, 200);
+        Imgproc.findContours(dst, contours, hierarchy, Imgproc.RETR_TREE,Imgproc.CHAIN_APPROX_SIMPLE);
+        for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
+            Imgproc.drawContours(dst, contours, contourIdx, new Scalar(0, 0, 255), -1);
+        }
+        return dst;
+    }
+
+    public Mat adaptiveTresholding(Mat input,boolean median,boolean treshMean){
+        Mat dst = new Mat();
+        if (median)
+            Imgproc.medianBlur(input,input,5);
+
+        if (treshMean)
+            Imgproc.adaptiveThreshold(input,dst,255,Imgproc.ADAPTIVE_THRESH_MEAN_C,Imgproc.THRESH_BINARY,11,2);
+        else
+            Imgproc.adaptiveThreshold(input,dst,255,Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C,Imgproc.THRESH_BINARY,11,2);
+
+        return dst;
     }
 
 }
