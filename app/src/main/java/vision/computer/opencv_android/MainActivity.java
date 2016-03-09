@@ -445,9 +445,11 @@ public class MainActivity extends AppCompatActivity
         Filters F = new Filters();
         Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
 
-        if (!mPhotoSeg.isEmpty()){
+        if (!mPhotoSeg.isEmpty()) {
             Recognition rec = new Recognition();
-            mBgr = rec.loadImageFromFile("Project2/circulo1.pgm");
+            mBgr = rec.loadImageFromFile("/Project2/circulo1.bpm",
+                    mSupportedImageSizes.get(mImageSizeIndex).width,
+                    mSupportedImageSizes.get(mImageSizeIndex).height);
         }
 
         if (mPhotoType.size() > 0) {
