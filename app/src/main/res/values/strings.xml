@@ -34,5 +34,6 @@
     <string name="photo_send_extra_subject">My photo from Second Sight</string>
     <string name="photo_send_extra_text">Check out my photo from the Second Sight app! http://nummist.com/opencv/</string>
     <string name="share">Share</string>
+    <string name="menu_image_seg">Image segmentation</string>
     <!-- strings -->
 </resources>
