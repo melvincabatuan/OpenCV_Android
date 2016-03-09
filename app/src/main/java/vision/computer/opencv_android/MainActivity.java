@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
@@ -67,7 +66,8 @@ public class MainActivity extends AppCompatActivity
     // An ID for items in the image size submenu.
     private static final int MENU_GROUP_ID_SIZE = 3;
     private static final int MENU_GROUP_ID_TYPE = 2;
-    private static final int SMENU_ADJUST = 4;
+    private static final int MENU_GROUP_ID_SEG = 4;
+
     ArrayList<String> imageTypes = new ArrayList<String>();
     // The OpenCV loader callback.
     Dialog mBottomSheetDialog;
@@ -90,6 +90,7 @@ public class MainActivity extends AppCompatActivity
     private CascadeClassifier cascadeClassifier;
     private Mat grayscaleImage;
     private int absoluteFaceSize;
+
     private BaseLoaderCallback mLoaderCallback =
             new BaseLoaderCallback(this) {
                 @Override
@@ -112,6 +113,7 @@ public class MainActivity extends AppCompatActivity
         mPhotoType = 4 --> Poster effect
         mPhotoType = 5 --> Distorsion effect */
     private Map<String, Integer> mPhotoType = new HashMap<String, Integer>();
+    private ArrayList<String> mPhotoSeg = new ArrayList<String>();
 
     private int mAdjustLevel = -1;
 
@@ -173,6 +175,8 @@ public class MainActivity extends AppCompatActivity
         imageTypes.add(getResources().getString(R.string.menu_median));
         imageTypes.add(getResources().getString(R.string.menu_bordeado));
         imageTypes.add(getResources().getString(R.string.menu_cartoon));
+
+        mPhotoSeg.add("Load circle1");
 
         final Window window = getWindow();
         window.addFlags(
@@ -280,6 +284,15 @@ public class MainActivity extends AppCompatActivity
             i++;
         }
 
+        final SubMenu segSubMenu = menu.addSubMenu(
+                R.string.menu_image_seg);
+        i = 0;
+
+        for (String s : mPhotoSeg) {
+            segSubMenu .add(MENU_GROUP_ID_SEG, i, Menu.NONE, s);
+            i++;
+        }
+
         return true;
     }
 
@@ -363,6 +376,9 @@ public class MainActivity extends AppCompatActivity
                     mPhotoType.put(getResources().getString(R.string.menu_cartoon), 1);
             }
 
+            if (item.getGroupId() == MENU_GROUP_ID_TYPE) {
+                mPhotoSeg.add("Circle1");
+            }
             return true;
         }
         Snackbar snackbar;
@@ -410,31 +426,6 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    public void displayColorDialog() {
-        final CharSequence[] items = {"Blue", "Green", "Red"};
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Select the color");
-        builder.setSingleChoiceItems(items, -1, new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int item) {
-                switch (item) {
-                    case 0:
-                        mColor = 0;
-                        break;
-                    case 1:
-                        mColor = 1;
-                        break;
-                    case 2:
-                        mColor = 2;
-                        break;
-                }
-                levelDialog.dismiss();
-            }
-        });
-
-        levelDialog = builder.create();
-        levelDialog.show();
-    }
-
     @Override
     public void onCameraViewStarted(final int width,
                                     final int height) {
@@ -453,6 +444,12 @@ public class MainActivity extends AppCompatActivity
         boolean post = true;
         Filters F = new Filters();
         Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+
+        if (!mPhotoSeg.isEmpty()){
+            Recognition rec = new Recognition();
+            mBgr = rec.loadImageFromFile("Project2/circulo1.pgm");
+        }
+
         if (mPhotoType.size() > 0) {
             if (mPhotoType.containsKey(getResources().getString(R.string.menu_clahe)))
                 mBgr = F.clahe(mBgr, mPhotoType.get(getResources().getString(R.string.menu_clahe)));
@@ -474,7 +471,7 @@ public class MainActivity extends AppCompatActivity
                 mBgr = F.poster(mBgr, mPhotoType.get(getResources().getString(R.string.menu_poster_Ellipse)), 1);
 
             if (mPhotoType.containsKey(getResources().getString(R.string.menu_posterContrast)))
-                mBgr = F.poster2(mBgr, 1);
+                mBgr = F.poster2(mBgr, mPhotoType.get(getResources().getString(R.string.menu_posterContrast)));
 
             if (mPhotoType.containsKey(getResources().getString(R.string.menu_distorsionB)))
                 mBgr = F.distorsionBarril(mBgr, -mPhotoType.get(getResources().getString(R.string.menu_distorsionB)));

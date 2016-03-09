@@ -43,13 +43,13 @@ public class Filters {
                 MorphKernel.put(i, j, res[i][j] * (1/coef));
         }*/
         //Imgproc.morphologyEx(src, src, Imgproc.MORPH_RECT, MorphKernel);
-        Size size = new Size(5*ro-7*ro,5*ro-7*ro);
+        Size size = new Size(5 * ro - 7 * ro, 5 * ro - 7 * ro);
         Imgproc.GaussianBlur(src, src, size, ro, ro);
 
         return src;
     }
 
-    public static Mat medianBlur(Mat src){
+    public static Mat medianBlur(Mat src) {
         int size = 5;
         Imgproc.medianBlur(src, src, size);
         return src;
@@ -165,7 +165,7 @@ public class Filters {
         return (H < 25) || (H > 230);
     }
 
-    public Mat getSkin(Mat src,int color) {
+    public Mat getSkin(Mat src, int color) {
         // allocate the result matrix
         Mat dst = src.clone();
         byte[] cblack = new byte[src.channels()];
@@ -224,7 +224,7 @@ public class Filters {
                     pixeldst[0] = B;
                     pixeldst[1] = G;
                     pixeldst[2] = R;
-                    pixeldst[color]+=100;
+                    pixeldst[color] += 100;
                     if (pixeldst[color] > 255)
                         pixeldst[color] = 255;
                     dst.put(i, j, pixeldst);
@@ -244,15 +244,20 @@ public class Filters {
     }
 
     public Mat poster2(Mat bgr, int index) {
-        final int MAXCOLOR = 255;
-
+        int MAXCOLOR = 255;
+        int colorCoef = (MAXCOLOR / index)+1;
+        ArrayList<Integer> splitted = new ArrayList<Integer>();
+        ;
+        for (int w = 0; w <= index; w++) {
+            int value = (MAXCOLOR / index * w);
+            splitted.add(value);
+        }
         for (int i = 0; i < bgr.rows(); i++) {
             for (int j = 0; j < bgr.cols(); j++) {
                 double[] pixel = bgr.get(i, j);
                 for (int c = 0; c < bgr.channels(); c++) {
-                    for (int x = 0; x < index; x++) {
-                        pixel[c] = pixelMaximization(pixel[c], MAXCOLOR, 0);
-                    }
+                    pixel[c] = pixelMaximization(pixel[c], splitted.get((int) (pixel[c] / colorCoef + 1)),
+                            splitted.get((int) (pixel[c] / colorCoef)));
                 }
                 bgr.put(i, j, pixel);
             }
@@ -362,7 +367,7 @@ public class Filters {
         Imgproc.cvtColor(bgr, bgr, Imgproc.COLOR_BGR2GRAY);
         Imgproc.Sobel(bgr, inv, CvType.CV_32F, 1, 0);
 
-        Core.MinMaxLocResult res =Core.minMaxLoc(inv);
+        Core.MinMaxLocResult res = Core.minMaxLoc(inv);
         inv.convertTo(dst, CvType.CV_8U, 255.0 / (res.maxVal - res.minVal), -res.minVal * 255.0 / (res.maxVal - res.minVal));
         Core.bitwise_not(dst, dst);
         Imgproc.cvtColor(dst, dst, Imgproc.COLOR_GRAY2BGR);
@@ -370,8 +375,8 @@ public class Filters {
     }
 
     public Mat cartoon(Mat bgr) {
-        int height=bgr.height();
-        int width=bgr.width();
+        int height = bgr.height();
+        int width = bgr.width();
         Mat image = new Mat();
         Imgproc.cvtColor(bgr, bgr, Imgproc.COLOR_BGR2RGB);
         for (int i = 0; i < 2; i++) {
@@ -380,7 +385,7 @@ public class Filters {
         bgr.release();
         Mat image_bi = new Mat();
         for (int j = 0; j < 7; j++) {
-            Imgproc.bilateralFilter(image,image_bi,9,9,7);
+            Imgproc.bilateralFilter(image, image_bi, 9, 9, 7);
         }
         image.release();
         for (int i = 0; i < 2; i++) {
@@ -401,46 +406,6 @@ public class Filters {
         Imgproc.cvtColor(cartoon, cartoon, Imgproc.COLOR_RGB2BGR);
         Imgproc.resize(cartoon, cartoon, new Size(width, height));
         return cartoon;
-    }
-
-    public Mat regularTresholding(Mat input){
-        Mat dst = new Mat();
-        Imgproc.threshold(input,dst,127,255,Imgproc.THRESH_BINARY);
-        return dst;
-    }
-    public Mat otsuThresholding(Mat input, boolean gaussian){
-        Mat dst = new Mat();
-        if (gaussian)
-            Imgproc.GaussianBlur(input,input,new Size(5,5),0);
-
-        Imgproc.threshold(input,dst,0,255,Imgproc.THRESH_BINARY+Imgproc.THRESH_OTSU);
-
-        return dst;
-    }
-
-    public Mat contours (Mat input){
-        Mat dst = new Mat();
-        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-        Mat hierarchy = new Mat();
-        Imgproc.Canny(input, dst, 50, 200);
-        Imgproc.findContours(dst, contours, hierarchy, Imgproc.RETR_TREE,Imgproc.CHAIN_APPROX_SIMPLE);
-        for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
-            Imgproc.drawContours(dst, contours, contourIdx, new Scalar(0, 0, 255), -1);
-        }
-        return dst;
-    }
-
-    public Mat adaptiveTresholding(Mat input,boolean median,boolean treshMean){
-        Mat dst = new Mat();
-        if (median)
-            Imgproc.medianBlur(input,input,5);
-
-        if (treshMean)
-            Imgproc.adaptiveThreshold(input,dst,255,Imgproc.ADAPTIVE_THRESH_MEAN_C,Imgproc.THRESH_BINARY,11,2);
-        else
-            Imgproc.adaptiveThreshold(input,dst,255,Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C,Imgproc.THRESH_BINARY,11,2);
-
-        return dst;
     }
 
 }
