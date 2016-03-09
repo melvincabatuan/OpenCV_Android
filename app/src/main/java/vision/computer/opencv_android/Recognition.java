@@ -1,11 +1,14 @@
 package vision.computer.opencv_android;
 
 import android.os.Environment;
+import android.util.Log;
 
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Scalar;
+
 import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
@@ -20,29 +23,33 @@ import java.util.List;
  */
 public class Recognition {
 
-    public Recognition(){}
+    public Recognition() {
+    }
 
-    public static Mat loadImageFromFile(String fileName) {
+    public static Mat loadImageFromFile(String fileName, int width, int height) {
 
-        Mat rgbLoadedImage = null;
+        Mat image = new Mat(new Size(width, height), CvType.CV_8U);// Change CvType as you need.
 
-        File root = Environment.getExternalStorageDirectory();
-        File file = new File(root, fileName);
+        File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        File file = new File(path, fileName);
 
         // this should be in BGR format according to the
         // documentation.
-        Mat image = Imgcodecs.imread(file.getAbsolutePath());
+        image = Imgcodecs.imread(file.getAbsolutePath());
 
+        Mat bgr = new Mat(image.size(), image.type());
+
+        Log.d("TAG", file.getAbsolutePath() + "  PATH     --------");
         if (image.width() > 0) {
 
-            rgbLoadedImage = new Mat(image.size(), image.type());
+            bgr = new Mat(image.size(), image.type());
 
-            Imgproc.cvtColor(image, rgbLoadedImage, Imgproc.COLOR_BGR2RGB);
+            Imgproc.cvtColor(image, bgr, Imgproc.COLOR_BGR2RGB);
 
             image.release();
             image = null;
         }
-        return rgbLoadedImage;
+        return bgr;
     }
 
     public Mat regularTresholding(Mat input){
