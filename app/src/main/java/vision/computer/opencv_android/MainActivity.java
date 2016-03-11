@@ -5,6 +5,8 @@ import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.Parameters;
@@ -33,14 +35,17 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.Scalar;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -445,11 +450,8 @@ public class MainActivity extends AppCompatActivity
         Filters F = new Filters();
         Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
 
+
         if (!mPhotoSeg.isEmpty()) {
-            Recognition rec = new Recognition();
-            mBgr = rec.loadImageFromFile("/Project2/circulo1.bpm",
-                    mSupportedImageSizes.get(mImageSizeIndex).width,
-                    mSupportedImageSizes.get(mImageSizeIndex).height);
         }
 
         if (mPhotoType.size() > 0) {
@@ -512,11 +514,13 @@ public class MainActivity extends AppCompatActivity
             takePhoto();
         }
 
-        if (post) {
-            Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA);
-            return rgba;
-        } else
-            return mBgr;
+            if (post) {
+                Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA);
+                return rgba;
+            } else
+                return mBgr;
+
+
     }
 
 
