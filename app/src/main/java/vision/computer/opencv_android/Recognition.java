@@ -1,5 +1,6 @@
 package vision.computer.opencv_android;
 
+import android.os.Environment;
 import android.support.design.widget.Snackbar;
 import android.view.View;
 
@@ -26,9 +27,8 @@ public class Recognition {
     private static ArrayList<String> files;
     private static int nImageIndex;
 
-    public Recognition(View view, String path) {
+    public  Recognition(View view, String path) {
         this.view = view;
-        this.path = path;
         files = directories(path);
         nImageIndex = -1;
     }
@@ -47,17 +47,20 @@ public class Recognition {
                 else
                     nImageIndex--;
             }
-            Mat image = Imgcodecs.imread(path + "/" + files.get(nImageIndex));
+            Mat image = Imgcodecs.imread(path + files.get(nImageIndex));
             Snackbar snackbar = Snackbar.make(view, "Image loaded: " + files.get(nImageIndex), Snackbar.LENGTH_LONG);
             snackbar.show();
             return image;
         } else return null;
     }
 
-    private static ArrayList<String> directories(String path) {
-        File folder = new File(path);
+    private ArrayList<String> directories(String path) {
+        File root = Environment.getExternalStorageDirectory();
+        this.path = root.getAbsolutePath() + path;
+        File folder = new File(this.path);
         File[] listOfFiles = folder.listFiles();
         ArrayList<String> files = new ArrayList<String>();
+
         for (int i = 0; i < listOfFiles.length; i++) {
             if (listOfFiles[i].isFile())
                 files.add(listOfFiles[i].getName());
@@ -111,7 +114,6 @@ public class Recognition {
 
             Mat hu = new Mat();
             Imgproc.HuMoments(moments, hu);
-
 
         }
     }

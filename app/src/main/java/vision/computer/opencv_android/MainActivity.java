@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity
     private static final String TAG =
             MainActivity.class.getSimpleName();
 
-    private static final String SD_PATH = "/storage/sdcard1/Project2/";
+    private static final String SD_PATH = "/Project2/";
 
     // A key for storing the index of the active camera.
     private static final String STATE_CAMERA_INDEX = "cameraIndex";
@@ -295,13 +295,10 @@ public class MainActivity extends AppCompatActivity
         }
         if (item.getGroupId() == MENU_GROUP_ID_SIZE) {
             //Update of the camera resolution and frame re-creation
-            if (!mPhotoSeg.isEmpty()) {
-                if (item.getItemId() < 4)
-                    mImageSizeIndex = item.getItemId();
-            }
-            else
+            if (mPhotoSeg.isEmpty()) {
                 mImageSizeIndex = item.getItemId();
-            recreate();
+                recreate();
+            }
             return true;
         }
         if (item.getGroupId() == MENU_GROUP_ID_TYPE) {
@@ -374,11 +371,20 @@ public class MainActivity extends AppCompatActivity
             return true;
         }
         if (item.getGroupId() == MENU_GROUP_ID_SEG) {
+            if(mImageSizeIndex > 4){
+                Snackbar snackbar = Snackbar.make(findViewById(android.R.id.content),
+                        "Can't start. Change size to: " +
+                                mSupportedImageSizes.get(mImageSizeIndex).width
+                                + " x " +
+                                mSupportedImageSizes.get(mImageSizeIndex).height
+                                + "or less",
+                        Snackbar.LENGTH_LONG);
+                snackbar.show();
+            }
             mPhotoType.clear();
             mPhotoSeg.add(getResources().getStringArray(R.array.menu_segmentation)[item.getItemId()]);
             return true;
         }
-
 
         Snackbar snackbar;
         switch (item.getItemId()) {
@@ -517,7 +523,6 @@ public class MainActivity extends AppCompatActivity
                 }
             }
         }
-
         if (mIsPhotoPending) {
             mIsPhotoPending = false;
             takePhoto();
@@ -532,7 +537,6 @@ public class MainActivity extends AppCompatActivity
 
 
     private void takePhoto() {
-
         // Determine the path and metadata for the photo.
         final long currentTimeMillis = System.currentTimeMillis();
         final String appName = getString(R.string.app_name);
