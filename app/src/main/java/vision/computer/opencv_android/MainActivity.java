@@ -446,10 +446,11 @@ public class MainActivity extends AppCompatActivity
         Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
 
         if (!mPhotoSeg.isEmpty()) {
-            Recognition rec = new Recognition();
-            mBgr = rec.loadImageFromFile("/Project2/circulo1.bpm",
+            Recognition rec = new Recognition(findViewById(android.R.id.content));
+            mBgr = rec.loadImageFromFile("/Project2/circulo1.pgm",
                     mSupportedImageSizes.get(mImageSizeIndex).width,
                     mSupportedImageSizes.get(mImageSizeIndex).height);
+            post = false;
         }
 
         if (mPhotoType.size() > 0) {

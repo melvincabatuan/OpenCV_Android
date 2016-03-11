@@ -1,13 +1,13 @@
 package vision.computer.opencv_android;
 
 import android.os.Environment;
-import android.util.Log;
+import android.support.design.widget.Snackbar;
+import android.view.View;
 
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
 
@@ -16,33 +16,38 @@ import java.io.File;
  */
 public class Recognition {
 
-    public Recognition() {
+    private static  View view;
+
+    public Recognition(View view) {
+        this.view = view;
     }
 
     public static Mat loadImageFromFile(String fileName, int width, int height) {
 
-        Mat image = new Mat(new Size(width, height), CvType.CV_8U);// Change CvType as you need.
+        if (android.os.Environment.getExternalStorageState().equals(
+                android.os.Environment.MEDIA_MOUNTED)) {
 
-        File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-        File file = new File(path, fileName);
+            Mat image = new Mat(new Size(width, height), CvType.CV_8U);
+            File roo=Environment.getDataDirectory();
+            File ro=Environment.getDownloadCacheDirectory();
+            File roott=Environment.getExternalStorageDirectory();
+            File roottt=Environment.getRootDirectory();
+            File root = Environment.getExternalStorageDirectory();
+            String path = "/storage/sdcard1/";
+            File file = new File(path+fileName);
 
-        // this should be in BGR format according to the
-        // documentation.
-        image = Imgcodecs.imread(file.getAbsolutePath());
+            // this should be in BGR format according to the
+            // documentation.
+            image = Imgcodecs.imread(file.getAbsolutePath());
 
-        Mat bgr = new Mat(image.size(), image.type());
-
-        Log.d("TAG", file.getAbsolutePath() + "  PATH     --------");
-        if (image.width() > 0) {
-
-            bgr = new Mat(image.size(), image.type());
-
-            Imgproc.cvtColor(image, bgr, Imgproc.COLOR_BGR2RGB);
-
-            image.release();
-            image = null;
+            if (image.width() > 0) {
+                Snackbar snackbar;
+                snackbar = Snackbar.make(view, "I'm innnnnnn ", Snackbar.LENGTH_LONG);
+                snackbar.show();
+            }
+            return image;
         }
-        return bgr;
+        else return null;
     }
 
 
