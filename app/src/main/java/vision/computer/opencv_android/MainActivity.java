@@ -371,7 +371,7 @@ public class MainActivity extends AppCompatActivity
             return true;
         }
         if (item.getGroupId() == MENU_GROUP_ID_SEG) {
-            if(mImageSizeIndex > 4){
+            if (mImageSizeIndex > 4) {
                 Snackbar snackbar = Snackbar.make(findViewById(android.R.id.content),
                         "Can't start. Change size to: " +
                                 mSupportedImageSizes.get(mImageSizeIndex).width
@@ -382,6 +382,8 @@ public class MainActivity extends AppCompatActivity
                 snackbar.show();
             }
             mPhotoType.clear();
+            if (mPhotoSeg.size() == 2)
+                mPhotoSeg.remove(1);
             mPhotoSeg.add(getResources().getStringArray(R.array.menu_segmentation)[item.getItemId()]);
             return true;
         }
@@ -463,6 +465,11 @@ public class MainActivity extends AppCompatActivity
                     new org.opencv.core.Size(
                             mSupportedImageSizes.get(mImageSizeIndex).width,
                             mSupportedImageSizes.get(mImageSizeIndex).height));
+            if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Otsu"))
+                mBgr = rec.otsuThresholding(mBgr, false);
+
+            if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Adaptative"))
+                mBgr = rec.adaptiveTresholding(mBgr, false, false);
         } else {
             if (!mStaticImage) {
                 Filters F = new Filters();
