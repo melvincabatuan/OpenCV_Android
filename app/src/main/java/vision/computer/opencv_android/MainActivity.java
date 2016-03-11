@@ -289,7 +289,7 @@ public class MainActivity extends AppCompatActivity
         i = 0;
 
         for (String s : mPhotoSeg) {
-            imageSubMenu.add(MENU_GROUP_ID_SEG, i, Menu.NONE, s);
+            segSubMenu .add(MENU_GROUP_ID_SEG, i, Menu.NONE, s);
             i++;
         }
 
