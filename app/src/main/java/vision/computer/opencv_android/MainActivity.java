@@ -1,7 +1,6 @@
 package vision.computer.opencv_android;
 
 import android.annotation.SuppressLint;
-import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -16,7 +15,6 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Images;
 import android.support.design.widget.Snackbar;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -52,9 +50,12 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity
         implements CvCameraViewListener2 {
+
     // A tag for log output.
     private static final String TAG =
             MainActivity.class.getSimpleName();
+
+    private static final String SD_PATH = "/storage/sdcard1/Project2/";
 
     // A key for storing the index of the active camera.
     private static final String STATE_CAMERA_INDEX = "cameraIndex";
@@ -67,11 +68,9 @@ public class MainActivity extends AppCompatActivity
     private static final int MENU_GROUP_ID_SIZE = 3;
     private static final int MENU_GROUP_ID_TYPE = 2;
     private static final int MENU_GROUP_ID_SEG = 4;
-
+    private static Recognition rec;
     ArrayList<String> imageTypes = new ArrayList<String>();
-    // The OpenCV loader callback.
-    Dialog mBottomSheetDialog;
-    AlertDialog levelDialog = null;
+    String[] imageSegmentation;
     // The index of the active camera.
     private int mCameraIndex;
     // The index of the active image size.
@@ -90,7 +89,7 @@ public class MainActivity extends AppCompatActivity
     private CascadeClassifier cascadeClassifier;
     private Mat grayscaleImage;
     private int absoluteFaceSize;
-
+    private Boolean mStaticImage = false;
     private BaseLoaderCallback mLoaderCallback =
             new BaseLoaderCallback(this) {
                 @Override
@@ -106,21 +105,10 @@ public class MainActivity extends AppCompatActivity
                     }
                 }
             };
-    /*  mPhotoType = 0 --> Normal camera
-        mPhotoType = 1 --> CLAHE algorithm
-        mPhotoType = 2 --> equalize hist
-        mPhotoType = 3 --> Alien effect
-        mPhotoType = 4 --> Poster effect
-        mPhotoType = 5 --> Distorsion effect */
     private Map<String, Integer> mPhotoType = new HashMap<String, Integer>();
     private ArrayList<String> mPhotoSeg = new ArrayList<String>();
-
-    private int mAdjustLevel = -1;
-
     private String mSelectionValue = "";
-
-    private int mColor = 1;
-
+    private Boolean mLoadNext = true;
 
     private void initializeOpenCVDependencies() {
         try {
@@ -176,7 +164,7 @@ public class MainActivity extends AppCompatActivity
         imageTypes.add(getResources().getString(R.string.menu_bordeado));
         imageTypes.add(getResources().getString(R.string.menu_cartoon));
 
-        mPhotoSeg.add("Load circle1");
+        imageSegmentation = getResources().getStringArray(R.array.menu_segmentation);
 
         final Window window = getWindow();
         window.addFlags(
@@ -209,6 +197,8 @@ public class MainActivity extends AppCompatActivity
         mCameraView.setMaxFrameSize(size.width, size.height);
         mCameraView.setCvCameraViewListener(this);
         setContentView(mCameraView);
+
+        rec = new Recognition(findViewById(android.R.id.content), SD_PATH);
 
     }
 
@@ -264,7 +254,6 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean onCreateOptionsMenu(final Menu menu) {
         getMenuInflater().inflate(R.menu.activity_main, menu);
-
         if (mSupportedImageSizes.size() > 1) {
             final SubMenu sizeSubMenu = menu.addSubMenu(
                     R.string.menu_image_size);
@@ -288,8 +277,8 @@ public class MainActivity extends AppCompatActivity
                 R.string.menu_image_seg);
         i = 0;
 
-        for (String s : mPhotoSeg) {
-            segSubMenu .add(MENU_GROUP_ID_SEG, i, Menu.NONE, s);
+        for (String s : imageSegmentation) {
+            segSubMenu.add(MENU_GROUP_ID_SEG, i, Menu.NONE, s);
             i++;
         }
 
@@ -306,12 +295,19 @@ public class MainActivity extends AppCompatActivity
         }
         if (item.getGroupId() == MENU_GROUP_ID_SIZE) {
             //Update of the camera resolution and frame re-creation
-            mImageSizeIndex = item.getItemId();
+            if (!mPhotoSeg.isEmpty()) {
+                if (item.getItemId() < 4)
+                    mImageSizeIndex = item.getItemId();
+            }
+            else
+                mImageSizeIndex = item.getItemId();
             recreate();
             return true;
         }
         if (item.getGroupId() == MENU_GROUP_ID_TYPE) {
+            mStaticImage = false;
             mSelectionValue = (String) item.getTitle();
+            mPhotoSeg.clear();
             if (item.getTitle().equals(getResources().getString(R.string.menu_normal)))
                 mPhotoType.clear();
 
@@ -375,12 +371,15 @@ public class MainActivity extends AppCompatActivity
                 if (!mPhotoType.containsKey(getResources().getString(R.string.menu_cartoon)))
                     mPhotoType.put(getResources().getString(R.string.menu_cartoon), 1);
             }
-
-            if (item.getGroupId() == MENU_GROUP_ID_TYPE) {
-                mPhotoSeg.add("Circle1");
-            }
             return true;
         }
+        if (item.getGroupId() == MENU_GROUP_ID_SEG) {
+            mPhotoType.clear();
+            mPhotoSeg.add(getResources().getStringArray(R.array.menu_segmentation)[item.getItemId()]);
+            return true;
+        }
+
+
         Snackbar snackbar;
         switch (item.getItemId()) {
             case R.id.menu_take_photo:
@@ -398,6 +397,10 @@ public class MainActivity extends AppCompatActivity
                     mPhotoType.put(mSelectionValue, value);
                     snackbar = Snackbar.make(findViewById(android.R.id.content), "Adjust level " + mSelectionValue + " : " + value, Snackbar.LENGTH_LONG);
                     snackbar.show();
+                }
+                if (!mPhotoSeg.isEmpty()) {
+                    mStaticImage = false;
+                    mLoadNext = true;
                 } else {
                     snackbar = Snackbar.make(findViewById(android.R.id.content), "No effects applied", Snackbar.LENGTH_LONG);
                     snackbar.show();
@@ -416,6 +419,10 @@ public class MainActivity extends AppCompatActivity
                         snackbar = Snackbar.make(findViewById(android.R.id.content), "Adjust level " + mPhotoType + " cannot be lower", Snackbar.LENGTH_LONG);
                         snackbar.show();
                     }
+                }
+                if (!mPhotoSeg.isEmpty()) {
+                    mStaticImage = false;
+                    mLoadNext = false;
                 } else {
                     snackbar = Snackbar.make(findViewById(android.R.id.content), "No effects applied", Snackbar.LENGTH_LONG);
                     snackbar.show();
@@ -440,71 +447,74 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public Mat onCameraFrame(final CvCameraViewFrame inputFrame) {
-        final Mat rgba = inputFrame.rgba();
         boolean post = true;
-        Filters F = new Filters();
-        Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
+        Mat rgba = inputFrame.rgba();
 
-        if (!mPhotoSeg.isEmpty()) {
-            Recognition rec = new Recognition(findViewById(android.R.id.content));
-            mBgr = rec.loadImageFromFile("/Project2/circulo1.pgm",
-                    mSupportedImageSizes.get(mImageSizeIndex).width,
-                    mSupportedImageSizes.get(mImageSizeIndex).height);
-            post = false;
-        }
+        if (!mStaticImage && !mPhotoSeg.isEmpty()) {
+            mStaticImage = true;
+            mBgr = rec.loadImage(mLoadNext);
+            Imgproc.resize(mBgr, mBgr,
+                    new org.opencv.core.Size(
+                            mSupportedImageSizes.get(mImageSizeIndex).width,
+                            mSupportedImageSizes.get(mImageSizeIndex).height));
+        } else {
+            if (!mStaticImage) {
+                Filters F = new Filters();
+                Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
 
-        if (mPhotoType.size() > 0) {
-            if (mPhotoType.containsKey(getResources().getString(R.string.menu_clahe)))
-                mBgr = F.clahe(mBgr, mPhotoType.get(getResources().getString(R.string.menu_clahe)));
+                if (mPhotoType.size() > 0) {
+                    if (mPhotoType.containsKey(getResources().getString(R.string.menu_clahe)))
+                        mBgr = F.clahe(mBgr, mPhotoType.get(getResources().getString(R.string.menu_clahe)));
 
-            if (mPhotoType.containsKey(getResources().getString(R.string.menu_heist)))
-                mBgr = F.histEqual(mBgr);
+                    if (mPhotoType.containsKey(getResources().getString(R.string.menu_heist)))
+                        mBgr = F.histEqual(mBgr);
 
-            if (mPhotoType.containsKey(getResources().getString(R.string.menu_alien)))
-                mBgr = F.getSkin(mBgr, mPhotoType.get(getResources().getString(R.string.menu_alien)) % 3);
+                    if (mPhotoType.containsKey(getResources().getString(R.string.menu_alien)))
+                        mBgr = F.getSkin(mBgr, mPhotoType.get(getResources().getString(R.string.menu_alien)) % 3);
 
-            if (mPhotoType.containsKey(getResources().getString(R.string.menu_alienHSV))) {
-                mBgr = F.alienHSV(mBgr);
-                post = false;
-            }
-            if (mPhotoType.containsKey(getResources().getString(R.string.menu_poster)))
-                mBgr = F.poster(mBgr, mPhotoType.get(getResources().getString(R.string.menu_poster)), 0);
+                    if (mPhotoType.containsKey(getResources().getString(R.string.menu_alienHSV))) {
+                        mBgr = F.alienHSV(mBgr);
+                        post = false;
+                    }
+                    if (mPhotoType.containsKey(getResources().getString(R.string.menu_poster)))
+                        mBgr = F.poster(mBgr, mPhotoType.get(getResources().getString(R.string.menu_poster)), 0);
 
-            if (mPhotoType.containsKey(getResources().getString(R.string.menu_poster_Ellipse)))
-                mBgr = F.poster(mBgr, mPhotoType.get(getResources().getString(R.string.menu_poster_Ellipse)), 1);
+                    if (mPhotoType.containsKey(getResources().getString(R.string.menu_poster_Ellipse)))
+                        mBgr = F.poster(mBgr, mPhotoType.get(getResources().getString(R.string.menu_poster_Ellipse)), 1);
 
-            if (mPhotoType.containsKey(getResources().getString(R.string.menu_posterContrast)))
-                mBgr = F.poster2(mBgr, mPhotoType.get(getResources().getString(R.string.menu_posterContrast)));
+                    if (mPhotoType.containsKey(getResources().getString(R.string.menu_posterContrast)))
+                        mBgr = F.poster2(mBgr, mPhotoType.get(getResources().getString(R.string.menu_posterContrast)));
 
-            if (mPhotoType.containsKey(getResources().getString(R.string.menu_distorsionB)))
-                mBgr = F.distorsionBarril(mBgr, -mPhotoType.get(getResources().getString(R.string.menu_distorsionB)));
+                    if (mPhotoType.containsKey(getResources().getString(R.string.menu_distorsionB)))
+                        mBgr = F.distorsionBarril(mBgr, -mPhotoType.get(getResources().getString(R.string.menu_distorsionB)));
 
-            if (mPhotoType.containsKey(getResources().getString(R.string.menu_distorsionC)))
-                mBgr = F.distorsionBarril(mBgr, mPhotoType.get(getResources().getString(R.string.menu_distorsionC)));
+                    if (mPhotoType.containsKey(getResources().getString(R.string.menu_distorsionC)))
+                        mBgr = F.distorsionBarril(mBgr, mPhotoType.get(getResources().getString(R.string.menu_distorsionC)));
 
-            if (mPhotoType.containsKey(getResources().getString(R.string.menu_sepia)))
-                mBgr = F.sepia(mBgr, mPhotoType.get(getResources().getString(R.string.menu_sepia)));
+                    if (mPhotoType.containsKey(getResources().getString(R.string.menu_sepia)))
+                        mBgr = F.sepia(mBgr, mPhotoType.get(getResources().getString(R.string.menu_sepia)));
 
-            if (mPhotoType.containsKey(getResources().getString(R.string.menu_smooth)))
-                mBgr = F.boxBlur(mBgr);
+                    if (mPhotoType.containsKey(getResources().getString(R.string.menu_smooth)))
+                        mBgr = F.boxBlur(mBgr);
 
-            if (mPhotoType.containsKey(getResources().getString(R.string.menu_median)))
-                mBgr = F.medianBlur(mBgr);
+                    if (mPhotoType.containsKey(getResources().getString(R.string.menu_median)))
+                        mBgr = F.medianBlur(mBgr);
 
-            if (mPhotoType.containsKey(getResources().getString(R.string.menu_gaussian)))
-                mBgr = F.gaussianSmooth(mBgr, mPhotoType.get(getResources().getString(R.string.menu_gaussian)));
+                    if (mPhotoType.containsKey(getResources().getString(R.string.menu_gaussian)))
+                        mBgr = F.gaussianSmooth(mBgr, mPhotoType.get(getResources().getString(R.string.menu_gaussian)));
 
-            if (mPhotoType.containsKey(getResources().getString(R.string.menu_bordeado))) {
-                mBgr = F.bordeado(mBgr);
-            }
+                    if (mPhotoType.containsKey(getResources().getString(R.string.menu_bordeado)))
+                        mBgr = F.bordeado(mBgr);
 
-            if (mPhotoType.containsKey(getResources().getString(R.string.menu_cartoon)))
-                mBgr = F.cartoon(mBgr);
+                    if (mPhotoType.containsKey(getResources().getString(R.string.menu_cartoon)))
+                        mBgr = F.cartoon(mBgr);
 
-            if (post) {
-                Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA, 3);
-            } else {
-                return mBgr;
+                    if (post) {
+                        Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA, 3);
+                    } else {
+                        return mBgr;
+                    }
+                }
             }
         }
 

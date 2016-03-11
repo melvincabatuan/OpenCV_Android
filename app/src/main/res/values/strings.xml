@@ -3,13 +3,16 @@
     <string name="title_activity_image_activity">Image_activity</string>
     <string name="delete">Delete</string>
     <string name="edit">Edit</string>
+
     <string name="green">Green</string>
     <string name="red">Red</string>
     <string name="blue">Blue</string>
+
     <string name="menu_next_camera">Next Cam</string>
     <string name="menu_take_photo">Take Photo</string>
     <string name="menu_image_size">Size</string>
     <string name="menu_image_type">Photo type</string>
+
     <string name="menu_heist">Hist. Eq.</string>
     <string name="menu_posterContrast">Poster Color</string>
     <string name="menu_normal">Normal</string>
@@ -26,6 +29,11 @@
     <string name="menu_poster_Ellipse">Poster Ellipse</string>
     <string name="menu_bordeado">Bordeado</string>
     <string name="menu_cartoon">Cartoon</string>
+
+    <string-array name="menu_segmentation">
+        <item>Load image</item>
+    </string-array>
+
     <string name="photo_delete_prompt_message">This photo is saved in your Gallery. Do you want to delete it?</string>
     <string name="photo_delete_prompt_title">Delete photo?</string>
     <string name="photo_error_message">Failed to save photo</string>
