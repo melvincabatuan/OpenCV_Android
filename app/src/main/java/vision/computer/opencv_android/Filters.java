@@ -3,7 +3,6 @@ package vision.computer.opencv_android;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfRect;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
@@ -25,7 +24,7 @@ public class Filters {
     public Filters() {
     }
 
-    public static Mat gaussianSmooth(Mat src, int ro) {
+    public Mat gaussianSmooth(Mat src, int ro) {
         /*Mat MorphKernel = new Mat();
         double pi = 3.1416;
         double coef = (1/(2*pi*ro*ro));
@@ -49,13 +48,13 @@ public class Filters {
         return src;
     }
 
-    public static Mat medianBlur(Mat src) {
+    public Mat medianBlur(Mat src) {
         int size = 5;
         Imgproc.medianBlur(src, src, size);
         return src;
     }
 
-    public static Mat boxBlur(Mat src) {
+    public Mat boxBlur(Mat src) {
        /* Mat MorphKernel = new Mat();
         int size = 5;
         for (int i = 0; i < size; i++) {

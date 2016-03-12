@@ -34,6 +34,9 @@
         <item>Load image</item>
         <item>Otsu</item>
         <item>Adaptative</item>
+        <item>Contours</item>
+        <item>Contours Close</item>
+        <item>Contours Gaussian</item>
     </string-array>
 
     <string name="photo_delete_prompt_message">This photo is saved in your Gallery. Do you want to delete it?</string>

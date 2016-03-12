@@ -16,37 +16,43 @@ import org.opencv.imgproc.Moments;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Created by Manuel on 09/03/2016.
  */
 public class Recognition {
 
+    private static final int NEXT_IMAGE = 1;
+    private static final int PREVIOUS_IMAGE = -1;
+    private static final int CV_FILL_CONTOURS = -1;
+
     private static View view;
     private static String path;
     private static ArrayList<String> files;
     private static int nImageIndex;
 
-    public  Recognition(View view, String path) {
+    public Recognition(View view, String path) {
         this.view = view;
         files = directories(path);
-        nImageIndex = -1;
+        nImageIndex = 0;
     }
 
-    public static Mat loadImage(boolean next) {
+    public static Mat loadImage(int next) {
         if (android.os.Environment.getExternalStorageState().equals(
                 android.os.Environment.MEDIA_MOUNTED)) {
-            if (next) {
+            if (next == NEXT_IMAGE) {
                 if (nImageIndex == files.size() - 1)
                     nImageIndex = 0;
                 else
                     nImageIndex++;
-            } else {
+            } else if (next == PREVIOUS_IMAGE) {
                 if (nImageIndex == 0)
                     nImageIndex = files.size() - 1;
                 else
                     nImageIndex--;
             }
+
             Mat image = Imgcodecs.imread(path + files.get(nImageIndex));
             Snackbar snackbar = Snackbar.make(view, "Image loaded: " + files.get(nImageIndex), Snackbar.LENGTH_LONG);
             snackbar.show();
@@ -70,30 +76,58 @@ public class Recognition {
 
     public Mat regularTresholding(Mat input) {
         Mat dst = new Mat();
-        Imgproc.threshold(input, dst, 127, 255, Imgproc.THRESH_BINARY);
+        Imgproc.threshold(input, dst, 127, 255, Imgproc.THRESH_BINARY_INV);
         return dst;
     }
 
     public Mat otsuThresholding(Mat input, boolean gaussian) {
-        Mat dst = new Mat();
+        Mat dst = new Mat(input.size(), input.type());
+        Mat gray = new Mat(input.size(), input.type());
+
         if (gaussian)
             Imgproc.GaussianBlur(input, input, new Size(5, 5), 0);
 
-        Imgproc.threshold(input, dst, 0, 255, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU);
-
-        return dst;
+        Imgproc.cvtColor(input, gray, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.threshold(gray, dst, 0, 255, Imgproc.THRESH_BINARY_INV + Imgproc.THRESH_OTSU);
+        Imgproc.cvtColor(dst, input, Imgproc.COLOR_GRAY2BGR);
+        return input;
     }
 
-    public Mat contours(Mat input) {
-        Mat dst = new Mat();
+    public Mat contours(Mat input, int gaussian) {
+        Random r = new Random();
+        Filters f = new Filters();
+        Mat gray = new Mat(input.size(), input.type());
+        Mat canny = new Mat(input.size(), input.type());
         List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-        Mat hierarchy = new Mat();
-        Imgproc.Canny(input, dst, 50, 200);
-        Imgproc.findContours(dst, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
-        for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
-            Imgproc.drawContours(dst, contours, contourIdx, new Scalar(0, 0, 255), -1);
+
+        //Treshold the image --> less errors/noise
+        input = otsuThresholding(input, false);
+        Imgproc.cvtColor(input, gray, Imgproc.COLOR_BGR2GRAY);
+
+        //Filter to detect borders
+        Imgproc.Canny(gray, canny, 4, 8);
+        //Blur image so borders are connected
+        if (gaussian == 1)
+            canny = f.gaussianSmooth(canny, 1);
+        else if (gaussian == 0) {
+            Mat structure = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(40, 40));
+            Imgproc.morphologyEx(canny, canny, Imgproc.MORPH_CLOSE, structure);
+            canny = f.poster(canny, 2, 1);
         }
-        return dst;
+        //Find contours and change color range to BGR
+        Imgproc.findContours(canny, contours, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+        Imgproc.cvtColor(canny, input, Imgproc.COLOR_GRAY2BGR);
+
+        //Print contours
+        for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
+            Imgproc.drawContours(input, contours, contourIdx,
+                    new Scalar(1 * r.nextInt(255 / (contourIdx + 1)) * (contourIdx + 1),
+                            1 * r.nextInt(255 / (contourIdx + 1)) * (contourIdx + 1),
+                            1 * r.nextInt(255 / (contourIdx + 1)) * (contourIdx + 1)),
+                    CV_FILL_CONTOURS);
+        }
+
+        return input;
     }
 
     public void getDescriptors(List<MatOfPoint> contours) {
@@ -118,17 +152,20 @@ public class Recognition {
         }
     }
 
-    public Mat adaptiveTresholding(Mat input, boolean median, boolean treshMean) {
-        Mat dst = new Mat();
-        if (median)
-            Imgproc.medianBlur(input, input, 5);
+    public Mat adaptiveTresholding(Mat input, boolean treshMean) {
+        Mat dst = new Mat(input.size(), input.type());
+        Mat grey = new Mat(input.size(), input.type());
+
+        Imgproc.cvtColor(input, grey, Imgproc.COLOR_BGR2GRAY);
 
         if (treshMean)
-            Imgproc.adaptiveThreshold(input, dst, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 11, 2);
+            Imgproc.adaptiveThreshold(grey, dst, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY_INV, 7, 2);
         else
-            Imgproc.adaptiveThreshold(input, dst, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
+            Imgproc.adaptiveThreshold(grey, dst, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY_INV, 7, 2);
 
-        return dst;
+        Imgproc.cvtColor(dst, input, Imgproc.COLOR_GRAY2BGR);
+
+        return input;
     }
 
 

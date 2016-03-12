@@ -108,7 +108,7 @@ public class MainActivity extends AppCompatActivity
     private Map<String, Integer> mPhotoType = new HashMap<String, Integer>();
     private ArrayList<String> mPhotoSeg = new ArrayList<String>();
     private String mSelectionValue = "";
-    private Boolean mLoadNext = true;
+    private int mLoadNext = 0;
 
     private void initializeOpenCVDependencies() {
         try {
@@ -382,9 +382,13 @@ public class MainActivity extends AppCompatActivity
                 snackbar.show();
             }
             mPhotoType.clear();
+            if (item.getItemId() == 0)
+                mLoadNext = 0;
             if (mPhotoSeg.size() == 2)
                 mPhotoSeg.remove(1);
-            mPhotoSeg.add(getResources().getStringArray(R.array.menu_segmentation)[item.getItemId()]);
+            if (!mPhotoSeg.contains(getResources().getStringArray(R.array.menu_segmentation)[item.getItemId()]))
+                mPhotoSeg.add(getResources().getStringArray(R.array.menu_segmentation)[item.getItemId()]);
+            mStaticImage = false;
             return true;
         }
 
@@ -408,7 +412,7 @@ public class MainActivity extends AppCompatActivity
                 }
                 if (!mPhotoSeg.isEmpty()) {
                     mStaticImage = false;
-                    mLoadNext = true;
+                    mLoadNext = 1;
                 } else {
                     snackbar = Snackbar.make(findViewById(android.R.id.content), "No effects applied", Snackbar.LENGTH_LONG);
                     snackbar.show();
@@ -430,7 +434,7 @@ public class MainActivity extends AppCompatActivity
                 }
                 if (!mPhotoSeg.isEmpty()) {
                     mStaticImage = false;
-                    mLoadNext = false;
+                    mLoadNext = -1;
                 } else {
                     snackbar = Snackbar.make(findViewById(android.R.id.content), "No effects applied", Snackbar.LENGTH_LONG);
                     snackbar.show();
@@ -459,17 +463,47 @@ public class MainActivity extends AppCompatActivity
         Mat rgba = inputFrame.rgba();
 
         if (!mStaticImage && !mPhotoSeg.isEmpty()) {
-            mStaticImage = true;
-            mBgr = rec.loadImage(mLoadNext);
-            Imgproc.resize(mBgr, mBgr,
-                    new org.opencv.core.Size(
-                            mSupportedImageSizes.get(mImageSizeIndex).width,
-                            mSupportedImageSizes.get(mImageSizeIndex).height));
-            if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Otsu"))
-                mBgr = rec.otsuThresholding(mBgr, false);
+            if (mPhotoSeg.get(0).equals("Load image")) {
+                if (mPhotoSeg.size() < 2) {
+                    mStaticImage = true;
+                    mBgr = rec.loadImage(mLoadNext);
+                    Imgproc.resize(mBgr, mBgr,
+                            new org.opencv.core.Size(
+                                    mSupportedImageSizes.get(mImageSizeIndex).width,
+                                    mSupportedImageSizes.get(mImageSizeIndex).height));
+                }
 
-            if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Adaptative"))
-                mBgr = rec.adaptiveTresholding(mBgr, false, false);
+                else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Otsu")) {
+                    mStaticImage = true;
+                    mBgr = rec.otsuThresholding(mBgr, false);
+                }
+
+                else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Adaptative")) {
+                    mStaticImage = true;
+                    mBgr = rec.adaptiveTresholding(mBgr, true);
+                }
+
+                else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Contours")) {
+                    mStaticImage = true;
+                    mBgr = rec.contours(mBgr, -1);
+                }
+
+                else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Contours Gaussian")) {
+                    mStaticImage = true;
+                    mBgr = rec.contours(mBgr, 1);
+                }
+
+                else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Contours Close")) {
+                    mStaticImage = true;
+                    mBgr = rec.contours(mBgr, 0);
+                }
+
+            } else {
+                mPhotoSeg.clear();
+                Snackbar snackbar = Snackbar.make(findViewById(android.R.id.content), "Image not loaded", Snackbar.LENGTH_LONG);
+                snackbar.show();
+            }
+
         } else {
             if (!mStaticImage) {
                 Filters F = new Filters();
