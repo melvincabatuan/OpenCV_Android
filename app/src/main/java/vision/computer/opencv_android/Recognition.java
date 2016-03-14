@@ -4,6 +4,7 @@ import android.os.Environment;
 import android.support.design.widget.Snackbar;
 import android.view.View;
 
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
@@ -17,6 +18,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
+import vision.computer.opencv_android.training.Descriptors;
+import vision.computer.opencv_android.training.TrainingData;
 
 /**
  * Created by Manuel on 09/03/2016.
@@ -32,10 +36,25 @@ public class Recognition {
     private static ArrayList<String> files;
     private static int nImageIndex;
 
+    private static TrainingData tdCirculo = new TrainingData();
+    private static TrainingData tdRectangulo = new TrainingData();
+    private static TrainingData tdVagon = new TrainingData();
+    private static TrainingData tdTriangulo = new TrainingData();
+    private static TrainingData tdRueda = new TrainingData();
+
     public Recognition(View view, String path) {
         this.view = view;
         files = directories(path);
         nImageIndex = 0;
+    }
+
+    public static Mat loadImage(String fileName) {
+        if (android.os.Environment.getExternalStorageState().equals(
+                android.os.Environment.MEDIA_MOUNTED)) {
+            Mat image = Imgcodecs.imread(path + fileName);
+            return image;
+        }
+        return null;
     }
 
     public static Mat loadImage(int next) {
@@ -60,27 +79,77 @@ public class Recognition {
         } else return null;
     }
 
-    private ArrayList<String> directories(String path) {
-        File root = Environment.getExternalStorageDirectory();
-        this.path = root.getAbsolutePath() + path;
-        File folder = new File(this.path);
-        File[] listOfFiles = folder.listFiles();
-        ArrayList<String> files = new ArrayList<String>();
+    public static void training() {
+        Mat training = new Mat(5, 5, CvType.CV_32FC1);
+        ArrayList<Descriptors> trainingData = new ArrayList<Descriptors>();
 
-        for (int i = 0; i < listOfFiles.length; i++) {
-            if (listOfFiles[i].isFile())
-                files.add(listOfFiles[i].getName());
+        for (String s : files) {
+            if (!s.contains("reco")) {
+                Mat image = loadImage(s);
+
+                if (s.contains("circulo")) {
+                    tdCirculo.addDescriptors(getDescriptors(getContours(image), "circulo"));
+                } else if (s.contains("triangulo")) {
+                    tdTriangulo.addDescriptors(getDescriptors(getContours(image), "triangulo"));
+                } else if (s.contains("rueda")) {
+                    tdRueda.addDescriptors(getDescriptors(getContours(image), "rueda"));
+                } else if (s.contains("vagon")) {
+                    tdVagon.addDescriptors(getDescriptors(getContours(image), "vagon"));
+                } else if (s.contains("rectangulo")) {
+                    tdRectangulo.addDescriptors(getDescriptors(getContours(image), "rectangulo"));
+                }
+            }
         }
-        return files;
+        tdCirculo.computeCalculations();
+        tdTriangulo.computeCalculations();
+        tdRueda.computeCalculations();
+        tdVagon.computeCalculations();
+        tdRectangulo.computeCalculations();
+
+        int j = 0;
+        int i = 0;
+        for (Descriptors d : trainingData) {
+
+        }
+
+        Mat validation = new Mat();
+        Mat test = new Mat();
     }
 
-    public Mat regularTresholding(Mat input) {
+    private static Descriptors getDescriptors(List<MatOfPoint> contours, String name) {
+        ArrayList<Descriptors> d = new ArrayList<Descriptors>();
+        for (int i = 0; i < contours.size(); i++) {
+            Descriptors dAux = new Descriptors();
+            MatOfPoint c = contours.get(i);
+            Moments moments = Imgproc.moments(c);
+            double area = Imgproc.contourArea(c);
+
+            if (area < 200)
+                break;
+
+            MatOfPoint2f c2 = new MatOfPoint2f(c.toArray());
+            double perimeter = Imgproc.arcLength(c2, true);
+
+            Mat hu = new Mat();
+            Imgproc.HuMoments(moments, hu);
+
+            dAux.setArea(area);
+            dAux.setPerimeter(perimeter);
+            dAux.setHuMoments(hu.get(0, 0));
+            dAux.setName(name);
+        }
+        if (d.size() > 1)
+            return null;
+        return d.get(0);
+    }
+
+    public static Mat regularTresholding(Mat input) {
         Mat dst = new Mat();
         Imgproc.threshold(input, dst, 127, 255, Imgproc.THRESH_BINARY_INV);
         return dst;
     }
 
-    public Mat otsuThresholding(Mat input, boolean gaussian) {
+    public static Mat otsuThresholding(Mat input, boolean gaussian) {
         Mat dst = new Mat(input.size(), input.type());
         Mat gray = new Mat(input.size(), input.type());
 
@@ -93,30 +162,27 @@ public class Recognition {
         return input;
     }
 
-    public Mat contours(Mat input, int gaussian) {
-        Random r = new Random();
-        Filters f = new Filters();
-        Mat gray = new Mat(input.size(), input.type());
-        Mat canny = new Mat(input.size(), input.type());
+    private static List<MatOfPoint> getContours(Mat input) {
         List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        input = otsuThresholding(input, false);
+        Imgproc.cvtColor(input, input, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.findContours(input, contours, null, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+        return contours;
+    }
+
+    public static Mat contours(Mat input) {
+        Random r = new Random();
+        Mat gray = new Mat(input.size(), input.type());
+        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        Mat hier = new Mat();
 
         //Treshold the image --> less errors/noise
         input = otsuThresholding(input, false);
         Imgproc.cvtColor(input, gray, Imgproc.COLOR_BGR2GRAY);
 
-        //Filter to detect borders
-        Imgproc.Canny(gray, canny, 4, 8);
-        //Blur image so borders are connected
-        if (gaussian == 1)
-            canny = f.gaussianSmooth(canny, 1);
-        else if (gaussian == 0) {
-            Mat structure = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(40, 40));
-            Imgproc.morphologyEx(canny, canny, Imgproc.MORPH_CLOSE, structure);
-            canny = f.poster(canny, 2, 1);
-        }
         //Find contours and change color range to BGR
-        Imgproc.findContours(canny, contours, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
-        Imgproc.cvtColor(canny, input, Imgproc.COLOR_GRAY2BGR);
+        Imgproc.findContours(gray, contours, hier, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+        Imgproc.cvtColor(gray, input, Imgproc.COLOR_GRAY2BGR);
 
         //Print contours
         for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
@@ -126,33 +192,10 @@ public class Recognition {
                             1 * r.nextInt(255 / (contourIdx + 1)) * (contourIdx + 1)),
                     CV_FILL_CONTOURS);
         }
-
         return input;
     }
 
-    public void getDescriptors(List<MatOfPoint> contours) {
-        for (int i = 0; i < contours.size(); i++) {
-            MatOfPoint c = contours.get(i);
-            Moments moments = Imgproc.moments(c);
-
-            int centroideX = (int) (moments.get_m10() / moments.get_m00());
-            int centroideY = (int) (moments.get_m01() / moments.get_m00());
-
-            double areaM = moments.get_m00();
-
-            double area = Imgproc.contourArea(c);
-
-            MatOfPoint2f c2 = new MatOfPoint2f(c.toArray());
-
-            double perimeter = Imgproc.arcLength(c2, true);
-
-            Mat hu = new Mat();
-            Imgproc.HuMoments(moments, hu);
-
-        }
-    }
-
-    public Mat adaptiveTresholding(Mat input, boolean treshMean) {
+    public static Mat adaptiveTresholding(Mat input, boolean treshMean) {
         Mat dst = new Mat(input.size(), input.type());
         Mat grey = new Mat(input.size(), input.type());
 
@@ -168,5 +211,17 @@ public class Recognition {
         return input;
     }
 
+    private ArrayList<String> directories(String path) {
+        File root = Environment.getExternalStorageDirectory();
+        this.path = root.getAbsolutePath() + path;
+        File folder = new File(this.path);
+        File[] listOfFiles = folder.listFiles();
+        ArrayList<String> files = new ArrayList<String>();
 
+        for (int i = 0; i < listOfFiles.length; i++) {
+            if (listOfFiles[i].isFile())
+                files.add(listOfFiles[i].getName());
+        }
+        return files;
+    }
 }

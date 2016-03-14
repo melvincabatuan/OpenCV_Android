@@ -1,4 +1,4 @@
-package vision.computer.opencv_android;
+package vision.computer.opencv_android.effects;
 
 import org.opencv.core.Core;
 import org.opencv.core.CvType;

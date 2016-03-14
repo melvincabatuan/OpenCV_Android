@@ -1,22 +1,17 @@
-package vision.computer.opencv_android;
+package vision.computer.opencv_android.gui;
 
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v7.app.AlertDialog;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
 
-import org.opencv.core.Mat;
-import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.imgproc.Imgproc;
-
-import java.io.File;
+import vision.computer.opencv_android.R;
 
 public class Image_activity extends Activity {
 

@@ -1,4 +1,4 @@
-package vision.computer.opencv_android;
+package vision.computer.opencv_android.gui;
 
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
@@ -44,6 +44,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import vision.computer.opencv_android.R;
+import vision.computer.opencv_android.Recognition;
+import vision.computer.opencv_android.effects.Filters;
 
 // Use the deprecated Camera class.
 @SuppressWarnings("deprecation")
@@ -485,17 +489,7 @@ public class MainActivity extends AppCompatActivity
 
                 else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Contours")) {
                     mStaticImage = true;
-                    mBgr = rec.contours(mBgr, -1);
-                }
-
-                else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Contours Gaussian")) {
-                    mStaticImage = true;
-                    mBgr = rec.contours(mBgr, 1);
-                }
-
-                else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Contours Close")) {
-                    mStaticImage = true;
-                    mBgr = rec.contours(mBgr, 0);
+                    mBgr = rec.contours(mBgr);
                 }
 
             } else {
