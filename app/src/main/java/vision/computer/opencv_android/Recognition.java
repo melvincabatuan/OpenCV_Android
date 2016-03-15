@@ -86,7 +86,7 @@ public class Recognition {
         for (String s : files) {
             if (!s.contains("reco")) {
                 Mat image = loadImage(s);
-
+                Imgproc.cvtColor(image,image,Imgproc.COLOR_BGR2GRAY);
                 if (s.contains("circulo")) {
                     tdCirculo.addDescriptors(getDescriptors(getContours(image), "circulo"));
                 } else if (s.contains("triangulo")) {
@@ -100,20 +100,12 @@ public class Recognition {
                 }
             }
         }
+
         tdCirculo.computeCalculations();
         tdTriangulo.computeCalculations();
         tdRueda.computeCalculations();
         tdVagon.computeCalculations();
         tdRectangulo.computeCalculations();
-
-        int j = 0;
-        int i = 0;
-        for (Descriptors d : trainingData) {
-
-        }
-
-        Mat validation = new Mat();
-        Mat test = new Mat();
     }
 
     private static Descriptors getDescriptors(List<MatOfPoint> contours, String name) {
