@@ -15,9 +15,13 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Scanner;
 
 import vision.computer.opencv_android.training.Descriptors;
 import vision.computer.opencv_android.training.TrainingData;
@@ -36,11 +40,11 @@ public class Recognition {
     private static ArrayList<String> files;
     private static int nImageIndex;
 
-    private static TrainingData tdCirculo = new TrainingData();
-    private static TrainingData tdRectangulo = new TrainingData();
-    private static TrainingData tdVagon = new TrainingData();
-    private static TrainingData tdTriangulo = new TrainingData();
-    private static TrainingData tdRueda = new TrainingData();
+    private static TrainingData tdCirculo = new TrainingData("circulo");
+    private static TrainingData tdRectangulo = new TrainingData("rectangulo");
+    private static TrainingData tdVagon = new TrainingData("vagon");
+    private static TrainingData tdTriangulo = new TrainingData("triangulo");
+    private static TrainingData tdRueda = new TrainingData("rueda");
 
     public Recognition(View view, String path) {
         this.view = view;
@@ -77,35 +81,6 @@ public class Recognition {
             snackbar.show();
             return image;
         } else return null;
-    }
-
-    public static void training() {
-        Mat training = new Mat(5, 5, CvType.CV_32FC1);
-        ArrayList<Descriptors> trainingData = new ArrayList<Descriptors>();
-
-        for (String s : files) {
-            if (!s.contains("reco")) {
-                Mat image = loadImage(s);
-                Imgproc.cvtColor(image,image,Imgproc.COLOR_BGR2GRAY);
-                if (s.contains("circulo")) {
-                    tdCirculo.addDescriptors(getDescriptors(getContours(image), "circulo"));
-                } else if (s.contains("triangulo")) {
-                    tdTriangulo.addDescriptors(getDescriptors(getContours(image), "triangulo"));
-                } else if (s.contains("rueda")) {
-                    tdRueda.addDescriptors(getDescriptors(getContours(image), "rueda"));
-                } else if (s.contains("vagon")) {
-                    tdVagon.addDescriptors(getDescriptors(getContours(image), "vagon"));
-                } else if (s.contains("rectangulo")) {
-                    tdRectangulo.addDescriptors(getDescriptors(getContours(image), "rectangulo"));
-                }
-            }
-        }
-
-        tdCirculo.computeCalculations();
-        tdTriangulo.computeCalculations();
-        tdRueda.computeCalculations();
-        tdVagon.computeCalculations();
-        tdRectangulo.computeCalculations();
     }
 
     private static Descriptors getDescriptors(List<MatOfPoint> contours, String name) {
@@ -203,9 +178,89 @@ public class Recognition {
         return input;
     }
 
+    public void training() {
+        Mat training = new Mat(5, 5, CvType.CV_32FC1);
+        ArrayList<Descriptors> trainingData = new ArrayList<Descriptors>();
+
+        for (String s : files) {
+            if (!s.contains("reco")) {
+                Mat image = loadImage(s);
+                Imgproc.cvtColor(image, image, Imgproc.COLOR_BGR2GRAY);
+                if (s.contains("circulo")) {
+                    tdCirculo.addDescriptors(getDescriptors(getContours(image), "circulo"));
+                } else if (s.contains("triangulo")) {
+                    tdTriangulo.addDescriptors(getDescriptors(getContours(image), "triangulo"));
+                } else if (s.contains("rueda")) {
+                    tdRueda.addDescriptors(getDescriptors(getContours(image), "rueda"));
+                } else if (s.contains("vagon")) {
+                    tdVagon.addDescriptors(getDescriptors(getContours(image), "vagon"));
+                } else if (s.contains("rectangulo")) {
+                    tdRectangulo.addDescriptors(getDescriptors(getContours(image), "rectangulo"));
+                }
+            }
+        }
+
+        tdCirculo.computeCalculations();
+        tdTriangulo.computeCalculations();
+        tdRueda.computeCalculations();
+        tdVagon.computeCalculations();
+        tdRectangulo.computeCalculations();
+
+        storeData(new TrainingData[]{tdCirculo, tdRectangulo, tdRueda, tdVagon, tdRectangulo}, "trainingData.txt");
+
+    }
+
+    private void storeData(TrainingData[] data, String fileName) {
+        try {
+            PrintWriter writer = new PrintWriter(new File(this.path + fileName), "UTF-8");
+            for (TrainingData td : data) {
+                writer.write(td.storeData() + "\n");
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private TrainingData[] retrieveData(String fileName) {
+        int classes = 5;
+        int descriptors = 5;
+        int huMoments = 7;
+        TrainingData[] td = new TrainingData[classes];
+        try {
+            Scanner scan = new Scanner(new File(this.path + fileName));
+            for (int u = 0; u < classes; u++) {
+                td[u].setName(scan.next());
+
+                for (int i = 0; i < descriptors; i++) {
+                    td[u].setMean(scan.nextDouble(), i);
+                    td[u].setVariance(scan.nextDouble(), i);
+
+                    //Get descriptor i
+                    Descriptors d = new Descriptors();
+                    d.setName(scan.next());
+                    d.setArea(scan.nextDouble());
+                    d.setPerimeter(scan.nextDouble());
+                    double[] hu = new double[huMoments];
+
+                    for (int j = 0; j < huMoments; j++) {
+                        hu[j] = scan.nextDouble();
+                    }
+
+                    d.setHuMoments(hu);
+                    td[u].addDescriptors(d);
+                }
+            }
+            scan.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return td;
+    }
+
     private ArrayList<String> directories(String path) {
-        File root = Environment.getExternalStorageDirectory();
-        this.path = root.getAbsolutePath() + path;
+        this.path = Environment.getExternalStorageDirectory().getAbsolutePath() + path;
         File folder = new File(this.path);
         File[] listOfFiles = folder.listFiles();
         ArrayList<String> files = new ArrayList<String>();
