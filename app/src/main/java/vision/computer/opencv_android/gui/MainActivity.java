@@ -1,4 +1,4 @@
-package vision.computer.opencv_android;
+package vision.computer.opencv_android.gui;
 
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
@@ -17,6 +17,7 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Images;
 import android.support.design.widget.Snackbar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -50,6 +51,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import vision.computer.opencv_android.R;
+import vision.computer.opencv_android.Recognition;
+import vision.computer.opencv_android.effects.Filters;
+
 // Use the deprecated Camera class.
 @SuppressWarnings("deprecation")
 
@@ -60,8 +65,7 @@ public class MainActivity extends AppCompatActivity
     private static final String TAG =
             MainActivity.class.getSimpleName();
 
-    private static final String SD_PATH = "/storage/sdcard1/Project2/";
-    private static final String PIC_PATH = "/Pictures/ImagenesT2/";
+    private static final String SD_PATH = "/Project2/";
 
     // A key for storing the index of the active camera.
     private static final String STATE_CAMERA_INDEX = "cameraIndex";
@@ -114,7 +118,7 @@ public class MainActivity extends AppCompatActivity
     private Map<String, Integer> mPhotoType = new HashMap<String, Integer>();
     private ArrayList<String> mPhotoSeg = new ArrayList<String>();
     private String mSelectionValue = "";
-    private Boolean mLoadNext = true;
+    private int mLoadNext = 0;
 
     private void initializeOpenCVDependencies() {
         try {
@@ -204,8 +208,7 @@ public class MainActivity extends AppCompatActivity
         mCameraView.setCvCameraViewListener(this);
         setContentView(mCameraView);
 
-        Log.d("DBG", getFilesDir() + "/" + PIC_PATH);
-        rec = new Recognition(findViewById(android.R.id.content), getFilesDir()+"/"+PIC_PATH);
+        rec = new Recognition(findViewById(android.R.id.content), SD_PATH);
 
     }
 
@@ -302,13 +305,10 @@ public class MainActivity extends AppCompatActivity
         }
         if (item.getGroupId() == MENU_GROUP_ID_SIZE) {
             //Update of the camera resolution and frame re-creation
-            if (!mPhotoSeg.isEmpty()) {
-                if (item.getItemId() < 4)
-                    mImageSizeIndex = item.getItemId();
-            }
-            else
+            if (mPhotoSeg.isEmpty()) {
                 mImageSizeIndex = item.getItemId();
-            recreate();
+                recreate();
+            }
             return true;
         }
         if (item.getGroupId() == MENU_GROUP_ID_TYPE) {
@@ -381,11 +381,26 @@ public class MainActivity extends AppCompatActivity
             return true;
         }
         if (item.getGroupId() == MENU_GROUP_ID_SEG) {
+            if (mImageSizeIndex > 4) {
+                Snackbar snackbar = Snackbar.make(findViewById(android.R.id.content),
+                        "Can't start. Change size to: " +
+                                mSupportedImageSizes.get(mImageSizeIndex).width
+                                + " x " +
+                                mSupportedImageSizes.get(mImageSizeIndex).height
+                                + "or less",
+                        Snackbar.LENGTH_LONG);
+                snackbar.show();
+            }
             mPhotoType.clear();
-            mPhotoSeg.add(getResources().getStringArray(R.array.menu_segmentation)[item.getItemId()]);
+            if (item.getItemId() == 0)
+                mLoadNext = 0;
+            if (mPhotoSeg.size() == 2)
+                mPhotoSeg.remove(1);
+            if (!mPhotoSeg.contains(getResources().getStringArray(R.array.menu_segmentation)[item.getItemId()]))
+                mPhotoSeg.add(getResources().getStringArray(R.array.menu_segmentation)[item.getItemId()]);
+            mStaticImage = false;
             return true;
         }
-
 
         Snackbar snackbar;
         switch (item.getItemId()) {
@@ -407,7 +422,7 @@ public class MainActivity extends AppCompatActivity
                 }
                 if (!mPhotoSeg.isEmpty()) {
                     mStaticImage = false;
-                    mLoadNext = true;
+                    mLoadNext = 1;
                 } else {
                     snackbar = Snackbar.make(findViewById(android.R.id.content), "No effects applied", Snackbar.LENGTH_LONG);
                     snackbar.show();
@@ -429,7 +444,7 @@ public class MainActivity extends AppCompatActivity
                 }
                 if (!mPhotoSeg.isEmpty()) {
                     mStaticImage = false;
-                    mLoadNext = false;
+                    mLoadNext = -1;
                 } else {
                     snackbar = Snackbar.make(findViewById(android.R.id.content), "No effects applied", Snackbar.LENGTH_LONG);
                     snackbar.show();
@@ -459,12 +474,54 @@ public class MainActivity extends AppCompatActivity
         Mat rgba = inputFrame.rgba();
 
         if (!mStaticImage && !mPhotoSeg.isEmpty()) {
-            mStaticImage = true;
-            mBgr = rec.loadImage(mLoadNext);
-            Imgproc.resize(mBgr, mBgr,
-                    new org.opencv.core.Size(
-                            mSupportedImageSizes.get(mImageSizeIndex).width,
-                            mSupportedImageSizes.get(mImageSizeIndex).height));
+            if (mPhotoSeg.get(0).equals("Load image")) {
+                if (mPhotoSeg.size() < 2) {
+                    mStaticImage = true;
+                    mBgr = rec.loadImage(mLoadNext);
+                    Imgproc.resize(mBgr, mBgr,
+                            new org.opencv.core.Size(
+                                    mSupportedImageSizes.get(mImageSizeIndex).width,
+                                    mSupportedImageSizes.get(mImageSizeIndex).height));
+                }
+
+                else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Otsu")) {
+                    mStaticImage = true;
+                    mBgr = rec.otsuThresholding(mBgr, false);
+                }
+
+                else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Adaptative")) {
+                    mStaticImage = true;
+                    mBgr = rec.adaptiveTresholding(mBgr, true);
+                }
+
+                else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Contours")) {
+                    mStaticImage = true;
+                    mBgr = rec.contours(mBgr);
+                }
+                else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Recognition")) {
+
+                    mStaticImage = true;
+                    rec.training("trainingData.txt");
+                    double[][] result = rec.mahalanobisDistance(mBgr);
+                    //mBgr = rec.contours(mBgr);
+
+                    new AlertDialog.Builder(this)
+                            .setTitle("Recognition")
+                            .setMessage("0 = Circulo" + result[0] + "\n" +
+                                    "1 = Vagon" + result[0] + "\n" +
+                                    "2 = Triangulo" + result[0] + "\n" +
+                                    "3 = Rectangulo" + result[0] + "\n" +
+                                    "4 = Rueda" + result[0] + "\n")
+                            .setIcon(android.R.drawable.ic_dialog_alert)
+                            .show();
+                }
+
+            } else {
+                mPhotoSeg.clear();
+                Snackbar snackbar = Snackbar.make(findViewById(android.R.id.content), "Image not loaded", Snackbar.LENGTH_LONG);
+                snackbar.show();
+            }
+
         } else {
             if (!mStaticImage) {
                 Filters F = new Filters();
@@ -525,7 +582,6 @@ public class MainActivity extends AppCompatActivity
                 }
             }
         }
-
         if (mIsPhotoPending) {
             mIsPhotoPending = false;
             takePhoto();
@@ -542,7 +598,6 @@ public class MainActivity extends AppCompatActivity
 
 
     private void takePhoto() {
-
         // Determine the path and metadata for the photo.
         final long currentTimeMillis = System.currentTimeMillis();
         final String appName = getString(R.string.app_name);

@@ -32,6 +32,10 @@
 
     <string-array name="menu_segmentation">
         <item>Load image</item>
+        <item>Otsu</item>
+        <item>Adaptative</item>
+        <item>Contours</item>
+        <item>Recognition</item>
     </string-array>
 
     <string name="photo_delete_prompt_message">This photo is saved in your Gallery. Do you want to delete it?</string>
