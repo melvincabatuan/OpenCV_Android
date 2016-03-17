@@ -15,6 +15,7 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Images;
 import android.support.design.widget.Snackbar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -490,6 +491,23 @@ public class MainActivity extends AppCompatActivity
                 else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Contours")) {
                     mStaticImage = true;
                     mBgr = rec.contours(mBgr);
+                }
+                else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Recognition")) {
+
+                    mStaticImage = true;
+                    rec.training("trainingData.txt");
+                    double[][] result = rec.mahalanobisDistance(mBgr);
+                    //mBgr = rec.contours(mBgr);
+
+                    new AlertDialog.Builder(this)
+                            .setTitle("Recognition")
+                            .setMessage("0 = Circulo" + result[0] + "\n" +
+                                    "1 = Vagon" + result[0] + "\n" +
+                                    "2 = Triangulo" + result[0] + "\n" +
+                                    "3 = Rectangulo" + result[0] + "\n" +
+                                    "4 = Rueda" + result[0] + "\n")
+                            .setIcon(android.R.drawable.ic_dialog_alert)
+                            .show();
                 }
 
             } else {

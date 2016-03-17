@@ -23,6 +23,10 @@ public class TrainingData {
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     /**
      * descriptorCase = 0 --> area
      * descriptorCase = 1 --> perimeter
@@ -30,16 +34,15 @@ public class TrainingData {
      * descriptorCase = 3 --> m2
      * descriptorCase = 4 --> m3
      *
-     * @param descriptorCase
      * @return
      */
-    public double[] mahalanobisDistance(int descriptorCase) {
+    public double[] mahalanobisDistance(Descriptors d) {
         double result[] = new double[5];
-        for (int j = 0; j < descriptors.size(); j++) {
-            for (int i = 0; i < descriptors.size(); i++) {
-                result[j] += ((descriptors.get(i).getArea() - mean[0])) * ((descriptors.get(i).getArea() - mean[0]))
-                        / variance[0];
-            }
+        double dValues[] = new double[]{d.getArea(), d.getPerimeter(), d.getHuMoments()[0]
+                , d.getHuMoments()[1], d.getHuMoments()[2]};
+        for (int i = 0; i < descriptors.size(); i++) {
+            result[i] += ((dValues[i] - mean[i])) * ((dValues[i] - mean[i]))
+                    / variance[i];
         }
         return result;
     }
@@ -111,6 +114,10 @@ public class TrainingData {
         return descriptors;
     }
 
+    public void setDescriptors(ArrayList<Descriptors> descriptors) {
+        this.descriptors = descriptors;
+    }
+
     public double getAreaMean() {
         return mean[0];
     }
@@ -149,14 +156,6 @@ public class TrainingData {
 
     public double getM3Variance() {
         return variance[4];
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setDescriptors(ArrayList<Descriptors> descriptors) {
-        this.descriptors = descriptors;
     }
 
     public void setMean(double mean, int index) {

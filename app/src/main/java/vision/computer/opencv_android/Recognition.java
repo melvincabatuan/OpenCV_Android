@@ -4,10 +4,8 @@ import android.os.Environment;
 import android.support.design.widget.Snackbar;
 import android.view.View;
 
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
-import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
@@ -40,11 +38,14 @@ public class Recognition {
     private static ArrayList<String> files;
     private static int nImageIndex;
 
-    private static TrainingData tdCirculo = new TrainingData("circulo");
-    private static TrainingData tdRectangulo = new TrainingData("rectangulo");
-    private static TrainingData tdVagon = new TrainingData("vagon");
-    private static TrainingData tdTriangulo = new TrainingData("triangulo");
-    private static TrainingData tdRueda = new TrainingData("rueda");
+    /*
+        0 = Circulo
+        1 = Vagon
+        2 = Triangulo
+        3 = Rectangulo
+        4 = Rueda
+     */
+    private static TrainingData[] td = new TrainingData[5];
 
     public Recognition(View view, String path) {
         this.view = view;
@@ -87,21 +88,22 @@ public class Recognition {
         ArrayList<Descriptors> d = new ArrayList<Descriptors>();
         for (int i = 0; i < contours.size(); i++) {
             Descriptors dAux = new Descriptors();
-            MatOfPoint c = contours.get(i);
-            Moments moments = Imgproc.moments(c);
-            double area = Imgproc.contourArea(c);
+
+            Moments moments = Imgproc.moments(contours.get(i));
+
+            double area = Imgproc.contourArea(contours.get(i));
 
             if (area < 200)
                 break;
 
-            MatOfPoint2f c2 = new MatOfPoint2f(c.toArray());
-            double perimeter = Imgproc.arcLength(c2, true);
+            //MatOfPoint2f c2 = new MatOfPoint2f(c.toArray());
+            //double perimeter = Imgproc.arcLength(c2, true);
 
             Mat hu = new Mat();
             Imgproc.HuMoments(moments, hu);
 
             dAux.setArea(area);
-            dAux.setPerimeter(perimeter);
+            //dAux.setPerimeter(perimeter);
             dAux.setHuMoments(hu.get(0, 0));
             dAux.setName(name);
         }
@@ -127,14 +129,6 @@ public class Recognition {
         Imgproc.threshold(gray, dst, 0, 255, Imgproc.THRESH_BINARY_INV + Imgproc.THRESH_OTSU);
         Imgproc.cvtColor(dst, input, Imgproc.COLOR_GRAY2BGR);
         return input;
-    }
-
-    private static List<MatOfPoint> getContours(Mat input) {
-        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-        input = otsuThresholding(input, false);
-        Imgproc.cvtColor(input, input, Imgproc.COLOR_BGR2GRAY);
-        Imgproc.findContours(input, contours, null, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
-        return contours;
     }
 
     public static Mat contours(Mat input) {
@@ -178,36 +172,68 @@ public class Recognition {
         return input;
     }
 
-    public void training() {
-        Mat training = new Mat(5, 5, CvType.CV_32FC1);
-        ArrayList<Descriptors> trainingData = new ArrayList<Descriptors>();
+    private static List<MatOfPoint> getContours(Mat input) {
+        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        input = otsuThresholding(input, false);
+        Imgproc.cvtColor(input, input, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.findContours(input, contours, new Mat(), Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+        return contours;
+    }
 
-        for (String s : files) {
-            if (!s.contains("reco")) {
-                Mat image = loadImage(s);
-                Imgproc.cvtColor(image, image, Imgproc.COLOR_BGR2GRAY);
-                if (s.contains("circulo")) {
-                    tdCirculo.addDescriptors(getDescriptors(getContours(image), "circulo"));
-                } else if (s.contains("triangulo")) {
-                    tdTriangulo.addDescriptors(getDescriptors(getContours(image), "triangulo"));
-                } else if (s.contains("rueda")) {
-                    tdRueda.addDescriptors(getDescriptors(getContours(image), "rueda"));
-                } else if (s.contains("vagon")) {
-                    tdVagon.addDescriptors(getDescriptors(getContours(image), "vagon"));
-                } else if (s.contains("rectangulo")) {
-                    tdRectangulo.addDescriptors(getDescriptors(getContours(image), "rectangulo"));
+    public void training(String filename) {
+        File f = new File(this.path + filename);
+        if (f.exists() && !f.isDirectory()) {
+            TrainingData[] td = retrieveData(filename);
+            for (int i = 0; i < td.length; i++) {
+                if (td[i].getName().equals("circulo"))
+                    td[0] = td[i];
+                if (td[i].getName().equals("rectangulo"))
+                    td[3] = td[i];
+                if (td[i].getName().equals("vagon"))
+                    td[1] = td[i];
+                if (td[i].getName().equals("rueda"))
+                    td[4] = td[i];
+                if (td[i].getName().equals("triangulo"))
+                    td[2] = td[i];
+            }
+        } else {
+            td[0] = new TrainingData("circulo");
+            td[3] = new TrainingData("rectangulo");
+            td[1] = new TrainingData("vagon");
+            td[2] = new TrainingData("triangulo");
+            td[4] = new TrainingData("rueda");
+
+            for (String s : files) {
+                if (!s.contains("reco")) {
+                    Mat image = loadImage(s);
+                    if (s.contains("circulo")) {
+                        td[0].addDescriptors(getDescriptors(getContours(image), "circulo"));
+                    } else if (s.contains("triangulo")) {
+                        td[2].addDescriptors(getDescriptors(getContours(image), "triangulo"));
+                    } else if (s.contains("rueda")) {
+                        td[4].addDescriptors(getDescriptors(getContours(image), "rueda"));
+                    } else if (s.contains("vagon")) {
+                        td[1].addDescriptors(getDescriptors(getContours(image), "vagon"));
+                    } else if (s.contains("rectangulo")) {
+                        td[3].addDescriptors(getDescriptors(getContours(image), "rectangulo"));
+                    }
                 }
             }
+
+            for (int i = 0; i < td.length; i++)
+                td[i].computeCalculations();
+
+            storeData(new TrainingData[]{td[0], td[3], td[4], td[1], td[3]}, filename);
         }
+    }
 
-        tdCirculo.computeCalculations();
-        tdTriangulo.computeCalculations();
-        tdRueda.computeCalculations();
-        tdVagon.computeCalculations();
-        tdRectangulo.computeCalculations();
-
-        storeData(new TrainingData[]{tdCirculo, tdRectangulo, tdRueda, tdVagon, tdRectangulo}, "trainingData.txt");
-
+    public double[][] mahalanobisDistance(Mat input) {
+        List<MatOfPoint> contours = getContours(input);
+        Descriptors d = getDescriptors(contours, files.get(nImageIndex));
+        double[][] result = new double[5][5];
+        for (int i = 0; i< td.length; i++)
+            result[i] = td[i].mahalanobisDistance(d);
+        return result;
     }
 
     private void storeData(TrainingData[] data, String fileName) {
