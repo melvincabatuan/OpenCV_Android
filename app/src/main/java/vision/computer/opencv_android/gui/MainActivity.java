@@ -3,6 +3,7 @@ package vision.computer.opencv_android.gui;
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -100,6 +101,7 @@ public class MainActivity extends AppCompatActivity
     private Mat grayscaleImage;
     private int absoluteFaceSize;
     private Boolean mStaticImage = false;
+    private double[][] resultClas;
     private BaseLoaderCallback mLoaderCallback =
             new BaseLoaderCallback(this) {
                 @Override
@@ -478,7 +480,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public Mat onCameraFrame(final CvCameraViewFrame inputFrame) {
+    public Mat onCameraFrame(final CvCameraViewFrame inputFrame) throws IOException {
         boolean post = true;
 
         Mat rgba = inputFrame.rgba();
@@ -512,18 +514,31 @@ public class MainActivity extends AppCompatActivity
 
                     mStaticImage = true;
                     rec.training("trainingData.txt");
-                    double[][] result = rec.mahalanobisDistance(mBgr);
+                    resultClas= rec.mahalanobisDistance(mBgr);
                     //mBgr = rec.contours(mBgr);
+                    post=false;
 
-                    new AlertDialog.Builder(this)
-                            .setTitle("Recognition")
-                            .setMessage("0 = Circulo" + result[0] + "\n" +
-                                    "1 = Vagon" + result[0] + "\n" +
-                                    "2 = Triangulo" + result[0] + "\n" +
-                                    "3 = Rectangulo" + result[0] + "\n" +
-                                    "4 = Rueda" + result[0] + "\n")
-                            .setIcon(android.R.drawable.ic_dialog_alert)
-                            .show();
+                    this.runOnUiThread(new Runnable() {
+                        public void run() {
+                            AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
+                            alertDialog.setTitle("Recognition");
+                            alertDialog.setIcon(android.R.drawable.ic_dialog_alert);
+                            alertDialog.setMessage("0 = Circulo" + resultClas[0] + "\n" +
+                                    "1 = Vagon" + resultClas[1] + "\n" +
+                                    "2 = Triangulo" + resultClas[2] + "\n" +
+                                    "3 = Rectangulo" + resultClas[3] + "\n" +
+                                    "4 = Rueda" + resultClas[4] + "\n");
+                            alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
+                                    new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            dialog.dismiss();
+                                        }
+                                    });
+                            alertDialog.show();
+                        }
+                    });
+
+
                 }
 
             } else {

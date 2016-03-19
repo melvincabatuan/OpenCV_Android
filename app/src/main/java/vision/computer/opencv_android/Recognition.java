@@ -1,7 +1,9 @@
 package vision.computer.opencv_android;
 
+import android.content.Context;
 import android.os.Environment;
 import android.support.design.widget.Snackbar;
+import android.util.Log;
 import android.view.View;
 
 import org.opencv.core.Mat;
@@ -13,7 +15,12 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -45,7 +52,7 @@ public class Recognition {
         3 = Rectangulo
         4 = Rueda
      */
-    private static TrainingData[] td = new TrainingData[5];
+    private TrainingData[] td = new TrainingData[5];
 
     public Recognition(View view, String path) {
         this.view = view;
@@ -233,21 +240,21 @@ public class Recognition {
         return contours;
     }
 
-    public void training(String filename) {
+    public void training(String filename) throws IOException {
         File f = new File(this.path + filename);
         if (f.exists() && !f.isDirectory()) {
             TrainingData[] td = retrieveData(filename);
             for (int i = 0; i < td.length; i++) {
                 if (td[i].getName().equals("circulo"))
-                    td[0] = td[i];
+                    this.td[0] = td[i];
                 if (td[i].getName().equals("rectangulo"))
-                    td[3] = td[i];
+                    this.td[3] = td[i];
                 if (td[i].getName().equals("vagon"))
-                    td[1] = td[i];
+                    this.td[1] = td[i];
                 if (td[i].getName().equals("rueda"))
-                    td[4] = td[i];
+                    this.td[4] = td[i];
                 if (td[i].getName().equals("triangulo"))
-                    td[2] = td[i];
+                    this.td[2] = td[i];
             }
         } else {
             td[0] = new TrainingData("circulo");
@@ -276,7 +283,7 @@ public class Recognition {
             for (int i = 0; i < td.length; i++)
                 td[i].computeCalculations();
 
-            storeData(new TrainingData[]{td[0], td[3], td[4], td[1], td[3]}, filename);
+            storeData(new TrainingData[]{td[0], td[3], td[4], td[1], td[2]}, filename);
         }
     }
 
@@ -284,47 +291,51 @@ public class Recognition {
         List<MatOfPoint> contours = getContours(input);
         Descriptors d = getDescriptors(contours, files.get(nImageIndex));
         double[][] result = new double[5][5];
-        for (int i = 0; i< td.length; i++)
+        for (int i = 0; i< td.length; i++){
             result[i] = td[i].mahalanobisDistance(d);
+        }
+
         return result;
     }
 
-    private void storeData(TrainingData[] data, String fileName) {
-        try {
-            PrintWriter writer = new PrintWriter(new File(this.path + fileName), "UTF-8");
-            for (TrainingData td : data) {
-                writer.write(td.storeData() + "\n");
-            }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+    private void storeData(TrainingData[] data, String fileName) throws IOException {
+        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(new FileOutputStream(this.path + fileName), "utf-8");
+        for (TrainingData td : data) {
+            outputStreamWriter.write(td.storeData());
+            outputStreamWriter.write("\n");
         }
+        outputStreamWriter.close();
     }
 
     private TrainingData[] retrieveData(String fileName) {
         int classes = 5;
         int descriptors = 5;
-        int huMoments = 7;
+        int huMoments = 8;
         TrainingData[] td = new TrainingData[classes];
         try {
-            Scanner scan = new Scanner(new File(this.path + fileName));
+            Scanner scan = new Scanner(new FileInputStream(this.path + fileName),"utf-8");
             for (int u = 0; u < classes; u++) {
-                td[u].setName(scan.next());
-
+                String nam = scan.next();
+                td[u] = new TrainingData(nam);
                 for (int i = 0; i < descriptors; i++) {
-                    td[u].setMean(scan.nextDouble(), i);
-                    td[u].setVariance(scan.nextDouble(), i);
-
+                    Double mean = Double.parseDouble(scan.next());
+                    td[u].setMean(mean, i);
+                    Double var = Double.parseDouble(scan.next());
+                    td[u].setVariance(var, i);
                     //Get descriptor i
                     Descriptors d = new Descriptors();
-                    d.setName(scan.next());
-                    d.setArea(scan.nextDouble());
-                    d.setPerimeter(scan.nextDouble());
+                    String n=scan.next();
+                    Log.d("DBG","nam: "+n);
+                    d.setName(n);
+                    Double area = Double.parseDouble(scan.next());
+                    d.setArea(area);
+                    Double perim = Double.parseDouble(scan.next());
+                    d.setPerimeter(perim);
                     double[] hu = new double[huMoments];
 
                     for (int j = 0; j < huMoments; j++) {
-                        hu[j] = scan.nextDouble();
+                        Double h = Double.parseDouble(scan.next());
+                        hu[j] = h;
                     }
 
                     d.setHuMoments(hu);
