@@ -1,5 +1,7 @@
 package vision.computer.opencv_android.effects;
 
+import android.util.Log;
+
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -401,10 +403,63 @@ public class Filters {
         Imgproc.cvtColor(edge, edge, Imgproc.COLOR_GRAY2RGB);
         Mat cartoon = new Mat();
         Core.bitwise_and(image_bi, edge, cartoon);
-        //Imgproc.cvtColor(cartoon, cartoon, Imgproc.COLOR_RGB2BGR);
         Imgproc.cvtColor(cartoon, cartoon, Imgproc.COLOR_RGB2BGR);
         Imgproc.resize(cartoon, cartoon, new Size(width, height));
         return cartoon;
+    }
+
+    public Mat cart_p1(Mat bgr){
+        int height = bgr.height();
+        int width = bgr.width();
+        Mat image = new Mat();
+        Imgproc.cvtColor(bgr, bgr, Imgproc.COLOR_BGR2RGB);
+        for (int i = 0; i < 2; i++) {
+            Imgproc.pyrDown(bgr, image);
+        }
+        bgr.release();
+        Mat image_bi = new Mat();
+        for (int j = 0; j < 7; j++) {
+            Imgproc.bilateralFilter(image, image_bi, 9, 9, 7);
+        }
+        image.release();
+        for (int i = 0; i < 2; i++) {
+            Imgproc.pyrUp(image_bi, image_bi);
+        }
+        Imgproc.cvtColor(image_bi, image_bi, Imgproc.COLOR_RGB2BGR);
+        Imgproc.resize(image_bi, image_bi, new Size(width, height));
+
+        return image_bi;
+    }
+
+    public Mat cart_p2(Mat bgr){
+        int height = bgr.height();
+        int width = bgr.width();
+        Mat image = new Mat();
+        Imgproc.cvtColor(bgr, bgr, Imgproc.COLOR_BGR2RGB);
+        for (int i = 0; i < 2; i++) {
+            Imgproc.pyrDown(bgr, image);
+        }
+        bgr.release();
+        Mat image_bi = new Mat();
+        for (int j = 0; j < 7; j++) {
+            Imgproc.bilateralFilter(image, image_bi, 9, 9, 7);
+        }
+        image.release();
+        for (int i = 0; i < 2; i++) {
+            Imgproc.pyrUp(image_bi, image_bi);
+        }
+        Mat gray = new Mat();
+        Mat blur = new Mat();
+        Imgproc.cvtColor(image_bi, gray, Imgproc.COLOR_RGB2GRAY);
+        Imgproc.medianBlur(gray, blur, 7);
+        gray.release();
+        Mat edge = new Mat();
+        Imgproc.adaptiveThreshold(blur, edge, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 9, 2);
+        blur.release();
+        Imgproc.cvtColor(edge, edge, Imgproc.COLOR_GRAY2BGR);
+        Imgproc.resize(edge, edge, new Size(width, height));
+
+        return edge;
     }
 
 }

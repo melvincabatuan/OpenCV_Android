@@ -173,6 +173,8 @@ public class MainActivity extends AppCompatActivity
         imageTypes.add(getResources().getString(R.string.menu_median));
         imageTypes.add(getResources().getString(R.string.menu_bordeado));
         imageTypes.add(getResources().getString(R.string.menu_cartoon));
+        imageTypes.add(getResources().getString(R.string.menu_cartoon_v1));
+        imageTypes.add(getResources().getString(R.string.menu_cartoon_v2));
 
         imageSegmentation = getResources().getStringArray(R.array.menu_segmentation);
 
@@ -378,6 +380,14 @@ public class MainActivity extends AppCompatActivity
                 if (!mPhotoType.containsKey(getResources().getString(R.string.menu_cartoon)))
                     mPhotoType.put(getResources().getString(R.string.menu_cartoon), 1);
             }
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_cartoon_v1))) {
+                if (!mPhotoType.containsKey(getResources().getString(R.string.menu_cartoon_v1)))
+                    mPhotoType.put(getResources().getString(R.string.menu_cartoon_v1), 1);
+            }
+            else if (item.getTitle().equals(getResources().getString(R.string.menu_cartoon_v2))) {
+                if (!mPhotoType.containsKey(getResources().getString(R.string.menu_cartoon_v2)))
+                    mPhotoType.put(getResources().getString(R.string.menu_cartoon_v2), 1);
+            }
             return true;
         }
         if (item.getGroupId() == MENU_GROUP_ID_SEG) {
@@ -573,6 +583,12 @@ public class MainActivity extends AppCompatActivity
 
                     if (mPhotoType.containsKey(getResources().getString(R.string.menu_cartoon)))
                         mBgr = F.cartoon(mBgr);
+
+                    if (mPhotoType.containsKey(getResources().getString(R.string.menu_cartoon_v1)))
+                        mBgr = F.cart_p1(mBgr);
+
+                    if (mPhotoType.containsKey(getResources().getString(R.string.menu_cartoon_v2)))
+                        mBgr = F.cart_p2(mBgr);
 
                     if (post) {
                         Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA, 3);
