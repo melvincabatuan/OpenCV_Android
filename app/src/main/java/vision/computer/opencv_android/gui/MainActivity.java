@@ -5,8 +5,6 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.Parameters;
@@ -35,10 +33,8 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.Scalar;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
@@ -381,12 +377,10 @@ public class MainActivity extends AppCompatActivity
             } else if (item.getTitle().equals(getResources().getString(R.string.menu_cartoon))) {
                 if (!mPhotoType.containsKey(getResources().getString(R.string.menu_cartoon)))
                     mPhotoType.put(getResources().getString(R.string.menu_cartoon), 1);
-            }
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_cartoon_v1))) {
+            } else if (item.getTitle().equals(getResources().getString(R.string.menu_cartoon_v1))) {
                 if (!mPhotoType.containsKey(getResources().getString(R.string.menu_cartoon_v1)))
                     mPhotoType.put(getResources().getString(R.string.menu_cartoon_v1), 1);
-            }
-            else if (item.getTitle().equals(getResources().getString(R.string.menu_cartoon_v2))) {
+            } else if (item.getTitle().equals(getResources().getString(R.string.menu_cartoon_v2))) {
                 if (!mPhotoType.containsKey(getResources().getString(R.string.menu_cartoon_v2)))
                     mPhotoType.put(getResources().getString(R.string.menu_cartoon_v2), 1);
             }
@@ -480,7 +474,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public Mat onCameraFrame(final CvCameraViewFrame inputFrame) throws IOException {
+    public Mat onCameraFrame(final CvCameraViewFrame inputFrame) {
         boolean post = true;
 
         Mat rgba = inputFrame.rgba();
@@ -494,29 +488,26 @@ public class MainActivity extends AppCompatActivity
                             new org.opencv.core.Size(
                                     mSupportedImageSizes.get(mImageSizeIndex).width,
                                     mSupportedImageSizes.get(mImageSizeIndex).height));
-                }
-
-                else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Otsu")) {
+                } else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Otsu")) {
                     mStaticImage = true;
                     mBgr = rec.otsuThresholding(mBgr, false);
-                }
-
-                else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Adaptative")) {
+                } else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Adaptative")) {
                     mStaticImage = true;
                     mBgr = rec.adaptiveTresholding(mBgr, true);
-                }
-
-                else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Contours")) {
+                } else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Contours")) {
                     mStaticImage = true;
                     mBgr = rec.contours(mBgr);
-                }
-                else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Recognition")) {
-
+                } else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Recognition")) {
+                    mBgr = rec.loadImage(0);
                     mStaticImage = true;
-                    rec.training("trainingData.txt");
-                    resultClas= rec.mahalanobisDistance(mBgr);
+                    try {
+                        rec.training("trainingData.txt");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    resultClas = rec.mahalanobisDistance(mBgr);
                     //mBgr = rec.contours(mBgr);
-                    post=false;
+                    post = false;
 
                     this.runOnUiThread(new Runnable() {
                         public void run() {
@@ -618,11 +609,11 @@ public class MainActivity extends AppCompatActivity
             takePhoto();
         }
 
-            if (post) {
-                Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA);
-                return rgba;
-            } else
-                return mBgr;
+        if (post) {
+            Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA);
+            return rgba;
+        } else
+            return mBgr;
 
 
     }
