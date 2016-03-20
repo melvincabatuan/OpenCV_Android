@@ -48,9 +48,9 @@ import java.util.List;
 import java.util.Map;
 
 import vision.computer.opencv_android.R;
+import vision.computer.opencv_android.effects.Filters;
 import vision.computer.opencv_android.training.DataSender;
 import vision.computer.opencv_android.training.Recognition;
-import vision.computer.opencv_android.effects.Filters;
 
 // Use the deprecated Camera class.
 @SuppressWarnings("deprecation")
@@ -99,10 +99,10 @@ public class MainActivity extends AppCompatActivity
     private Boolean mStaticImage = false;
     private double[][] resultClass;
     private ArrayList<double[]> resultCirculo = new ArrayList<>();
-    private ArrayList<double[]> resultTriangulo= new ArrayList<>();
-    private ArrayList<double[]> resultRectangulo= new ArrayList<>();
-    private ArrayList<double[]> resultRueda= new ArrayList<>();
-    private ArrayList<double[]> resultVagon= new ArrayList<>();
+    private ArrayList<double[]> resultTriangulo = new ArrayList<>();
+    private ArrayList<double[]> resultRectangulo = new ArrayList<>();
+    private ArrayList<double[]> resultRueda = new ArrayList<>();
+    private ArrayList<double[]> resultVagon = new ArrayList<>();
     private BaseLoaderCallback mLoaderCallback =
             new BaseLoaderCallback(this) {
                 @Override
@@ -505,7 +505,7 @@ public class MainActivity extends AppCompatActivity
                 } else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Recognition")) {
                     mStaticImage = true;
                     mBgr = rec.loadImage(0);
-
+                    mPhotoSeg.remove(1);
                     try {
                         rec.training("trainingData.txt");
                     } catch (IOException e) {
@@ -513,11 +513,12 @@ public class MainActivity extends AppCompatActivity
                     }
 
                     final Intent intent = new Intent(this, RecognitionActivity.class);
-                    List<MatOfPoint> contours =rec.numberObjects(mBgr);
-                    int numberObjects=contours.size();
+                    List<MatOfPoint> contours = rec.numberObjects(mBgr);
+                    int numberObjects = contours.size();
                     intent.putExtra(RecognitionActivity.EXTRA_RECIEVE_NUM, numberObjects);
-                    for (int i=0;i<numberObjects;i++){
-                        resultClass = rec.mahalanobisDistance(contours,i);
+
+                    for (int i = 0; i < numberObjects; i++) {
+                        resultClass = rec.mahalanobisDistance(contours, i);
                         resultCirculo.add(resultClass[0]);
                         resultRectangulo.add(resultClass[1]);
                         resultRueda.add(resultClass[2]);
@@ -619,7 +620,9 @@ public class MainActivity extends AppCompatActivity
         }
 
         if (post) {
-            Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA);
+            if (mBgr.size().width > 0
+                    && mBgr.size().height > 0)
+                Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA);
             return rgba;
         } else
             return mBgr;
