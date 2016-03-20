@@ -27,7 +27,7 @@ public class RecognitionActivity extends AppCompatActivity {
     private ArrayList<double[]> resultVagon= new ArrayList<>();
     private ArrayList<ArrayList<double[]>> results = new ArrayList<>();
 
-    private final double TRESHOLD=11.1;
+    private final double TRESHOLD=12.8; //CHI-SQUARE --> m=5 alpha=0.025
     private int numObjects;
 
     @Override
