@@ -31,25 +31,27 @@
 
     <application
         android:allowBackup="true"
+        android:allowClearUserData="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/AppTheme"
-        android:allowClearUserData="true">
+        android:theme="@style/AppTheme">
         <activity
             android:name=".gui.MainActivity"
-            android:screenOrientation="landscape"
-            android:label="@string/app_name">
+            android:label="@string/app_name"
+            android:screenOrientation="landscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
             android:name=".gui.Image_activity"
-            android:label="@string/app_name"
-            >
-        </activity>
+            android:label="@string/app_name"></activity>
+        <activity
+            android:name=".gui.RecognitionActivity"
+            android:label="@string/title_activity_recognition"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
     </application>
-
 
 </manifest>

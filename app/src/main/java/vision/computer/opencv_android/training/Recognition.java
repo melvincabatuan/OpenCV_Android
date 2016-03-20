@@ -1,6 +1,5 @@
-package vision.computer.opencv_android;
+package vision.computer.opencv_android.training;
 
-import android.content.Context;
 import android.os.Environment;
 import android.support.design.widget.Snackbar;
 import android.util.Log;
@@ -19,17 +18,11 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
-
-import vision.computer.opencv_android.training.Descriptors;
-import vision.computer.opencv_android.training.TrainingData;
 
 /**
  * Created by Manuel on 09/03/2016.

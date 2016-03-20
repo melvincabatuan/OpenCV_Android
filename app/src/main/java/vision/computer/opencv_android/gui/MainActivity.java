@@ -3,7 +3,6 @@ package vision.computer.opencv_android.gui;
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
@@ -16,7 +15,6 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Images;
 import android.support.design.widget.Snackbar;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -49,7 +47,7 @@ import java.util.List;
 import java.util.Map;
 
 import vision.computer.opencv_android.R;
-import vision.computer.opencv_android.Recognition;
+import vision.computer.opencv_android.training.Recognition;
 import vision.computer.opencv_android.effects.Filters;
 
 // Use the deprecated Camera class.
@@ -97,7 +95,7 @@ public class MainActivity extends AppCompatActivity
     private Mat grayscaleImage;
     private int absoluteFaceSize;
     private Boolean mStaticImage = false;
-    private double[][] resultClas;
+    private double[][] resultClass;
     private BaseLoaderCallback mLoaderCallback =
             new BaseLoaderCallback(this) {
                 @Override
@@ -498,40 +496,32 @@ public class MainActivity extends AppCompatActivity
                     mStaticImage = true;
                     mBgr = rec.contours(mBgr);
                 } else if (mPhotoSeg.size() == 2 && mPhotoSeg.get(1).equals("Recognition")) {
-                    mBgr = rec.loadImage(0);
                     mStaticImage = true;
+                    mBgr = rec.loadImage(0);
+
                     try {
                         rec.training("trainingData.txt");
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    resultClas = rec.mahalanobisDistance(mBgr);
-                    //mBgr = rec.contours(mBgr);
-                    post = false;
 
-                    this.runOnUiThread(new Runnable() {
+                    resultClass = rec.mahalanobisDistance(mBgr);
+                    Imgproc.cvtColor(mBgr,mBgr, Imgproc.COLOR_GRAY2BGR);
+                    // Open the photo in LabActivity.
+                    final Intent intent = new Intent(this, RecognitionActivity.class);
+                    intent.putExtra(RecognitionActivity.EXTRA_RECIEVE_CIRCULO, resultClass[0]);
+                    intent.putExtra(RecognitionActivity.EXTRA_RECIEVE_RECTANGULO, resultClass[1]);
+                    intent.putExtra(RecognitionActivity.EXTRA_RECIEVE_RUEDA, resultClass[2]);
+                    intent.putExtra(RecognitionActivity.EXTRA_RECIEVE_TRIANGULO, resultClass[3]);
+                    intent.putExtra(RecognitionActivity.EXTRA_RECIEVE_VAGON, resultClass[4]);
+
+                    runOnUiThread(new Runnable() {
+                        @Override
                         public void run() {
-                            AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
-                            alertDialog.setTitle("Recognition");
-                            alertDialog.setIcon(android.R.drawable.ic_dialog_alert);
-                            alertDialog.setMessage("0 = Circulo" + resultClas[0] + "\n" +
-                                    "1 = Vagon" + resultClas[1] + "\n" +
-                                    "2 = Triangulo" + resultClas[2] + "\n" +
-                                    "3 = Rectangulo" + resultClas[3] + "\n" +
-                                    "4 = Rueda" + resultClas[4] + "\n");
-                            alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
-                                    new DialogInterface.OnClickListener() {
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            dialog.dismiss();
-                                        }
-                                    });
-                            alertDialog.show();
+                            startActivity(intent);
                         }
                     });
-
-
                 }
-
             } else {
                 mPhotoSeg.clear();
                 Snackbar snackbar = Snackbar.make(findViewById(android.R.id.content), "Image not loaded", Snackbar.LENGTH_LONG);
@@ -614,8 +604,6 @@ public class MainActivity extends AppCompatActivity
             return rgba;
         } else
             return mBgr;
-
-
     }
 
 
