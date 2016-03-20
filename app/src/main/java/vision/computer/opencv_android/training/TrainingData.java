@@ -41,10 +41,17 @@ public class TrainingData {
         double dValues[] = new double[]{d.getArea(), d.getPerimeter(), d.getHuMoments()[0]
                 , d.getHuMoments()[1], d.getHuMoments()[2]};
         for (int i = 0; i < descriptors.size(); i++) {
-            result[i] += ((dValues[i] - mean[i])) * ((dValues[i] - mean[i]))
+            double value= ((dValues[i] - mean[i])) * ((dValues[i] - mean[i]))
                     / variance[i];
+            result[i] += roundNum(value,2);
         }
         return result;
+    }
+
+    public static double roundNum(double numero,int digits)
+    {
+        int cifras=(int) Math.pow(10,digits);
+        return Math.rint(numero*cifras)/cifras;
     }
 
     public void addDescriptors(Descriptors d) {

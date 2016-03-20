@@ -7,6 +7,7 @@ import android.view.View;
 
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
+import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
@@ -20,6 +21,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
@@ -84,7 +86,7 @@ public class Recognition {
         } else return null;
     }
 
-    private static Descriptors getDescriptors(List<MatOfPoint> contours, String name) {
+    private static Descriptors getDescriptors(List<MatOfPoint> contours, String name,int n,boolean normal) {
         ArrayList<Descriptors> d = new ArrayList<Descriptors>();
         for (int i = 0; i < contours.size(); i++) {
             Descriptors dAux = new Descriptors();
@@ -96,8 +98,9 @@ public class Recognition {
             if (area < 150)
                 continue;
 
-            //MatOfPoint2f c2 = new MatOfPoint2f(c.toArray());
-            //double perimeter = Imgproc.arcLength(c2, true);
+            contours.get(i);
+            MatOfPoint2f c2 = new MatOfPoint2f(contours.get(i).toArray());
+            double perimeter = Imgproc.arcLength(c2, true);
 
             Mat hu = new Mat();
             //Imgproc.HuMoments(moments, hu);
@@ -105,16 +108,16 @@ public class Recognition {
             double[] HUmoments = new double[8];
             HUmoments=calculateHuMoments(moments);
             dAux.setArea(area);
-            //dAux.setPerimeter(perimeter);
+            dAux.setPerimeter(perimeter);
             dAux.setHuMoments(HUmoments);
             dAux.setName(name);
             d.add(dAux);
         }
-        if (d.size() > 1)
+        if (d.size() > 1 && normal)
             return null;
         if(d.isEmpty())
             return null;
-        return d.get(0);
+        return d.get(n);
     }
 
     public static double[] calculateHuMoments(Moments p){
@@ -260,15 +263,15 @@ public class Recognition {
                 if (!s.contains("reco")) {
                     Mat image = loadImage(s);
                     if (s.contains("circulo")) {
-                        td[0].addDescriptors(getDescriptors(getContours(image), "circulo"));
+                        td[0].addDescriptors(getDescriptors(getContours(image), "circulo",0,true));
                     } else if (s.contains("triangulo")) {
-                        td[2].addDescriptors(getDescriptors(getContours(image), "triangulo"));
+                        td[2].addDescriptors(getDescriptors(getContours(image), "triangulo",0,true));
                     } else if (s.contains("rueda")) {
-                        td[4].addDescriptors(getDescriptors(getContours(image), "rueda"));
+                        td[4].addDescriptors(getDescriptors(getContours(image), "rueda",0,true));
                     } else if (s.contains("vagon")) {
-                        td[1].addDescriptors(getDescriptors(getContours(image), "vagon"));
+                        td[1].addDescriptors(getDescriptors(getContours(image), "vagon",0,true));
                     } else if (s.contains("rectangulo")) {
-                        td[3].addDescriptors(getDescriptors(getContours(image), "rectangulo"));
+                        td[3].addDescriptors(getDescriptors(getContours(image), "rectangulo",0,true));
                     }
                 }
             }
@@ -280,15 +283,29 @@ public class Recognition {
         }
     }
 
-    public double[][] mahalanobisDistance(Mat input) {
-        List<MatOfPoint> contours = getContours(input);
-        Descriptors d = getDescriptors(contours, files.get(nImageIndex));
+    public double[][] mahalanobisDistance(List<MatOfPoint> contours,int n) {
+        Descriptors d = getDescriptors(contours, files.get(nImageIndex),n,false);
         double[][] result = new double[5][5];
         for (int i = 0; i< td.length; i++){
             result[i] = td[i].mahalanobisDistance(d);
         }
 
         return result;
+    }
+    public List<MatOfPoint> numberObjects(Mat input){
+        return getBigContours(getContours(input));
+    }
+
+    public List<MatOfPoint> getBigContours(List<MatOfPoint> cont){
+        Iterator<MatOfPoint> recorrer = cont.iterator();
+
+        while (recorrer.hasNext()) {
+            MatOfPoint c = recorrer.next();
+            if (Imgproc.contourArea(c)<150){
+                recorrer.remove();
+            }
+        }
+        return cont;
     }
 
     private void storeData(TrainingData[] data, String fileName) throws IOException {

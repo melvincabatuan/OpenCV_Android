@@ -33,6 +33,7 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
@@ -47,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 
 import vision.computer.opencv_android.R;
+import vision.computer.opencv_android.training.DataSender;
 import vision.computer.opencv_android.training.Recognition;
 import vision.computer.opencv_android.effects.Filters;
 
@@ -96,6 +98,11 @@ public class MainActivity extends AppCompatActivity
     private int absoluteFaceSize;
     private Boolean mStaticImage = false;
     private double[][] resultClass;
+    private ArrayList<double[]> resultCirculo = new ArrayList<>();
+    private ArrayList<double[]> resultTriangulo= new ArrayList<>();
+    private ArrayList<double[]> resultRectangulo= new ArrayList<>();
+    private ArrayList<double[]> resultRueda= new ArrayList<>();
+    private ArrayList<double[]> resultVagon= new ArrayList<>();
     private BaseLoaderCallback mLoaderCallback =
             new BaseLoaderCallback(this) {
                 @Override
@@ -505,15 +512,27 @@ public class MainActivity extends AppCompatActivity
                         e.printStackTrace();
                     }
 
-                    resultClass = rec.mahalanobisDistance(mBgr);
-                    Imgproc.cvtColor(mBgr,mBgr, Imgproc.COLOR_GRAY2BGR);
-                    // Open the photo in LabActivity.
                     final Intent intent = new Intent(this, RecognitionActivity.class);
-                    intent.putExtra(RecognitionActivity.EXTRA_RECIEVE_CIRCULO, resultClass[0]);
-                    intent.putExtra(RecognitionActivity.EXTRA_RECIEVE_RECTANGULO, resultClass[1]);
-                    intent.putExtra(RecognitionActivity.EXTRA_RECIEVE_RUEDA, resultClass[2]);
-                    intent.putExtra(RecognitionActivity.EXTRA_RECIEVE_TRIANGULO, resultClass[3]);
-                    intent.putExtra(RecognitionActivity.EXTRA_RECIEVE_VAGON, resultClass[4]);
+                    List<MatOfPoint> contours =rec.numberObjects(mBgr);
+                    int numberObjects=contours.size();
+                    intent.putExtra(RecognitionActivity.EXTRA_RECIEVE_NUM, numberObjects);
+                    for (int i=0;i<numberObjects;i++){
+                        resultClass = rec.mahalanobisDistance(contours,i);
+                        resultCirculo.add(resultClass[0]);
+                        resultRectangulo.add(resultClass[1]);
+                        resultRueda.add(resultClass[2]);
+                        resultTriangulo.add(resultClass[3]);
+                        resultVagon.add(resultClass[4]);
+                    }
+                    intent.putExtra(RecognitionActivity.EXTRA_RECIEVE_CIRCULO, new DataSender(resultCirculo));
+                    intent.putExtra(RecognitionActivity.EXTRA_RECIEVE_RECTANGULO, new DataSender(resultRectangulo));
+                    intent.putExtra(RecognitionActivity.EXTRA_RECIEVE_RUEDA, new DataSender(resultRueda));
+                    intent.putExtra(RecognitionActivity.EXTRA_RECIEVE_TRIANGULO, new DataSender(resultTriangulo));
+                    intent.putExtra(RecognitionActivity.EXTRA_RECIEVE_VAGON, new DataSender(resultVagon));
+
+                    Imgproc.cvtColor(mBgr, mBgr, Imgproc.COLOR_GRAY2BGR);
+                    // Open the photo in LabActivity.
+
 
                     runOnUiThread(new Runnable() {
                         @Override

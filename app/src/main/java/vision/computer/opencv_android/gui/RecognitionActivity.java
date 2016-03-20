@@ -6,7 +6,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+
 import vision.computer.opencv_android.R;
+import vision.computer.opencv_android.training.DataSender;
 
 public class RecognitionActivity extends AppCompatActivity {
 
@@ -15,8 +18,17 @@ public class RecognitionActivity extends AppCompatActivity {
     public static final String EXTRA_RECIEVE_VAGON = "recognitionvagon";
     public static final String EXTRA_RECIEVE_RUEDA = "recognitionrueda";
     public static final String EXTRA_RECIEVE_TRIANGULO = "recognitiontriangulo";
+    public static final String EXTRA_RECIEVE_NUM = "numobjects";
 
-    private double[][] mRecognition = new double[5][5];
+    private ArrayList<double[]> resultCirculo= new ArrayList<>();
+    private ArrayList<double[]> resultTriangulo= new ArrayList<>();
+    private ArrayList<double[]> resultRectangulo= new ArrayList<>();
+    private ArrayList<double[]> resultRueda= new ArrayList<>();
+    private ArrayList<double[]> resultVagon= new ArrayList<>();
+    private ArrayList<ArrayList<double[]>> results = new ArrayList<>();
+
+    private final double TRESHOLD=11.1;
+    private int numObjects;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,32 +36,60 @@ public class RecognitionActivity extends AppCompatActivity {
 
         final Intent intent = getIntent();
 
-        mRecognition[0] = intent.getDoubleArrayExtra(EXTRA_RECIEVE_CIRCULO);
-        mRecognition[1] = intent.getDoubleArrayExtra(EXTRA_RECIEVE_RECTANGULO);
-        mRecognition[2] = intent.getDoubleArrayExtra(EXTRA_RECIEVE_RUEDA);
-        mRecognition[3] = intent.getDoubleArrayExtra(EXTRA_RECIEVE_TRIANGULO);
-        mRecognition[4] = intent.getDoubleArrayExtra(EXTRA_RECIEVE_VAGON);
+        String result="===== RESULT =====";
 
+        numObjects=intent.getIntExtra(EXTRA_RECIEVE_NUM, 0);
+        DataSender dat = (DataSender) intent.getSerializableExtra(EXTRA_RECIEVE_CIRCULO);
+        results.add(dat.getParliaments());
+        dat = (DataSender) intent.getSerializableExtra(EXTRA_RECIEVE_RECTANGULO);
+        results.add(dat.getParliaments());
+        dat = (DataSender)  intent.getSerializableExtra(EXTRA_RECIEVE_RUEDA);
+        results.add(dat.getParliaments());
+        dat = (DataSender) intent.getSerializableExtra(EXTRA_RECIEVE_TRIANGULO);
+        results.add(dat.getParliaments());
+        dat = (DataSender)  intent.getSerializableExtra(EXTRA_RECIEVE_VAGON);
+        results.add(dat.getParliaments());
 
         setContentView(R.layout.activity_recognition);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         TextView tv = (TextView) findViewById(R.id.text);
+        TextView res= (TextView) findViewById(R.id.result);
         String write = "";
         String[] objects = new String[]{"circulo ", "vagon ", "triangulo ", "rectangulo ", "rueda "};
         String[] parameters = new String[]{"area ", "perimeter ", "huM-1 ", "huM-2 ", "huM-3 "};
 
-        for (int i = 0; i < mRecognition.length; i++) {
-            write += objects[i];
-            for (int j = 0; j < mRecognition[i].length; j++) {
-                write += parameters[j];
-                write += mRecognition[i][j] + " ";
+        for(int x=0;x<numObjects;x++){
+            write +="IMG "+x+"\n";
+            for (int i = 0; i < objects.length; i++) {
+                write += objects[i];
+                boolean recognize=true;
+                for (int j = 0; j < parameters.length; j++) {
+                    write += parameters[j];
+                    write += results.get(i).get(x)[j] + " ";
+                    if (results.get(i).get(x)[j]>TRESHOLD){
+                        recognize=false;
+                    }
+                }
+                if(recognize)
+                    result+="\n IMG "+x+" -->"+objects[i];
+                write += "\n\n";
             }
-            write += "\n\n";
+
+
         }
 
         tv.setText(write);
+        res.setText(result);
     }
-
+    public boolean recognizeClass(double[] values){
+        boolean recog=true;
+       for (int i=0; i<values.length;i++){
+           if (values[i]>TRESHOLD){
+               recog=false;
+           }
+       }
+        return recog;
+    }
 }
