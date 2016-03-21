@@ -19,6 +19,11 @@ public class TrainingData {
         this.name = name;
     }
 
+    public static double roundNum(double numero, int digits) {
+        int cifras = (int) Math.pow(10, digits);
+        return Math.rint(numero * cifras) / cifras;
+    }
+
     public String getName() {
         return name;
     }
@@ -41,17 +46,11 @@ public class TrainingData {
         double dValues[] = new double[]{d.getArea(), d.getPerimeter(), d.getHuMoments()[0]
                 , d.getHuMoments()[1], d.getHuMoments()[2]};
         for (int i = 0; i < descriptors.size(); i++) {
-            double value= ((dValues[i] - mean[i])) * ((dValues[i] - mean[i]))
+            double value = ((dValues[i] - mean[i])) * ((dValues[i] - mean[i]))
                     / variance[i];
-            result[i] += roundNum(value,2);
+            result[i] += roundNum(value, 2);
         }
         return result;
-    }
-
-    public static double roundNum(double numero,int digits)
-    {
-        int cifras=(int) Math.pow(10,digits);
-        return Math.rint(numero*cifras)/cifras;
     }
 
     public void addDescriptors(Descriptors d) {
@@ -96,6 +95,7 @@ public class TrainingData {
         /*
         VARIANCE CALCULATION
          */
+
         mArea = 0;
         mPerimeter = 0;
         m1 = 0;
@@ -115,6 +115,22 @@ public class TrainingData {
         variance[2] = m1 / descriptors.size();
         variance[3] = m2 / descriptors.size();
         variance[4] = m3 / descriptors.size();
+
+        /*
+        Variance correction
+         */
+
+        variance[0] = (mean[0] * 0.01) * (mean[0] * .01) / descriptors.size()
+                + (descriptors.size() - 1) / descriptors.size() * variance[0];
+        variance[1] = (mean[1] * 0.01) * (mean[1] * .01) / descriptors.size()
+                + (descriptors.size() - 1) / descriptors.size() * variance[1];
+        variance[2] = (mean[2] * 0.01) * (mean[2] * .01) / descriptors.size()
+                + (descriptors.size() - 1) / descriptors.size() * variance[2];
+        variance[3] = (mean[3] * 0.01) * (mean[3] * .01) / descriptors.size()
+                + (descriptors.size() - 1) / descriptors.size() * variance[3];
+        variance[4] = (mean[4] * 0.01) * (mean[4] * .01) / descriptors.size()
+                + (descriptors.size() - 1) / descriptors.size() * variance[4];
+
     }
 
     public ArrayList<Descriptors> getDescriptors() {

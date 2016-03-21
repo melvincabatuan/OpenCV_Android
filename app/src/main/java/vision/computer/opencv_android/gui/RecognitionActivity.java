@@ -63,8 +63,11 @@ public class RecognitionActivity extends AppCompatActivity {
                 for (int j = 0; j < parameters.length; j++) {
                     write += parameters[j];
                     write += results.get(i).get(x)[j] + " ";
-                    if (results.get(i).get(x)[j] > THRESHOLD)
+                    if (results.get(i).get(x)[j] > THRESHOLD){
                         recognize = false;
+                        break;
+                    }
+
                 }
                 if (recognize)
                     result += "Object " + x + " -->" + objects[i];
