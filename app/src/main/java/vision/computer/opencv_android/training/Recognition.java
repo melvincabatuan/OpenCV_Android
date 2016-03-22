@@ -292,6 +292,7 @@ public class Recognition {
 
         return result;
     }
+
     public List<MatOfPoint> numberObjects(Mat input){
         return getBigContours(getContours(input));
     }
@@ -366,7 +367,7 @@ public class Recognition {
         ArrayList<String> files = new ArrayList<String>();
 
         for (int i = 0; i < listOfFiles.length; i++) {
-            if (listOfFiles[i].isFile())
+            if (listOfFiles[i].isFile() && !listOfFiles[i].getName().contains(".txt"))
                 files.add(listOfFiles[i].getName());
         }
         return files;

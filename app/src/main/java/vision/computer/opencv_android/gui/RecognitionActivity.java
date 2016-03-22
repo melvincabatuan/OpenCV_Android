@@ -3,6 +3,7 @@ package vision.computer.opencv_android.gui;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.text.method.ScrollingMovementMethod;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ public class RecognitionActivity extends AppCompatActivity {
     public static final String EXTRA_RECIEVE_TRIANGULO = "recognitiontriangulo";
     public static final String EXTRA_RECIEVE_NUM = "numobjects";
     private final double THRESHOLD = 12.8; //CHI-SQUARE --> m=5 alpha=0.025
+
     private ArrayList<double[]> resultCirculo = new ArrayList<>();
     private ArrayList<double[]> resultTriangulo = new ArrayList<>();
     private ArrayList<double[]> resultRectangulo = new ArrayList<>();
@@ -50,6 +52,9 @@ public class RecognitionActivity extends AppCompatActivity {
         setContentView(R.layout.activity_recognition);
 
         TextView tv = (TextView) findViewById(R.id.text);
+        tv.setMovementMethod(new ScrollingMovementMethod());
+
+
         TextView res = (TextView) findViewById(R.id.result);
         String write = "";
         String[] objects = new String[]{"circulo ", "vagon ", "triangulo ", "rectangulo ", "rueda "};

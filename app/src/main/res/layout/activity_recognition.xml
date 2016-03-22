@@ -22,6 +22,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@+id/text"
+            android:maxLines = "1000"
+            android:scrollbars = "vertical"
             android:text="prueba2" />
     </LinearLayout>
 

@@ -110,17 +110,23 @@ public class TrainingData {
             m3 += (descriptors.get(i).getHuMoments()[2] - mean[4]) * (descriptors.get(i).getHuMoments()[2] - mean[4]);
         }
 
-        variance[0] = mArea / descriptors.size();
-        variance[1] = mPerimeter / descriptors.size();
-        variance[2] = m1 / descriptors.size();
-        variance[3] = m2 / descriptors.size();
-        variance[4] = m3 / descriptors.size();
+        /*variance[0] = (mArea) / descriptors.size();
+        variance[1] = (mPerimeter) / descriptors.size();
+        variance[2] = (m1) / descriptors.size();
+        variance[3] = (m2) / descriptors.size();
+        variance[4] = (m3) / descriptors.size();*/
+
+        variance[0] = ((mean[0] * 0.01) * (mean[0] * 0.01) + mArea) / descriptors.size();
+        variance[1] = ((mean[1] * 0.01) * (mean[1] * 0.01) + mPerimeter) / descriptors.size();
+        variance[2] = ((mean[2] * 0.01) * (mean[2] * 0.01) + m1) / descriptors.size();
+        variance[3] = ((mean[3] * 0.01) * (mean[3] * 0.01) + m2) / descriptors.size();
+        variance[4] = ((mean[4] * 0.01) * (mean[4] * 0.01) + m3) / descriptors.size();
 
         /*
         Variance correction
-         */
+        */
 
-        variance[0] = (mean[0] * 0.01) * (mean[0] * .01) / descriptors.size()
+        /*variance[0] = (mean[0] * 0.01) * (mean[0] * .01) / descriptors.size()
                 + (descriptors.size() - 1) / descriptors.size() * variance[0];
         variance[1] = (mean[1] * 0.01) * (mean[1] * .01) / descriptors.size()
                 + (descriptors.size() - 1) / descriptors.size() * variance[1];
@@ -129,7 +135,7 @@ public class TrainingData {
         variance[3] = (mean[3] * 0.01) * (mean[3] * .01) / descriptors.size()
                 + (descriptors.size() - 1) / descriptors.size() * variance[3];
         variance[4] = (mean[4] * 0.01) * (mean[4] * .01) / descriptors.size()
-                + (descriptors.size() - 1) / descriptors.size() * variance[4];
+                + (descriptors.size() - 1) / descriptors.size() * variance[4];*/
 
     }
 
