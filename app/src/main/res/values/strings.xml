@@ -32,6 +32,13 @@
     <string name="menu_cartoon_v1">Cartoon Paso1</string>
     <string name="menu_cartoon_v2">Cartoon Paso2</string>
 
+    <string-array name="menu_contours">
+        <item>Load image</item>
+        <item></item>
+        <item></item>
+        <item></item>
+        <item></item>
+    </string-array>
 
     <string-array name="menu_segmentation">
         <item>Load image</item>

@@ -75,6 +75,7 @@ public class MainActivity extends AppCompatActivity
     private static final int MENU_GROUP_ID_SIZE = 3;
     private static final int MENU_GROUP_ID_TYPE = 2;
     private static final int MENU_GROUP_ID_SEG = 4;
+    private static final int MENU_GROUP_ID_CONT = 5;
     private static Recognition rec;
     ArrayList<String> imageTypes = new ArrayList<String>();
     String[] imageSegmentation;
@@ -122,6 +123,7 @@ public class MainActivity extends AppCompatActivity
     private ArrayList<String> mPhotoSeg = new ArrayList<String>();
     private String mSelectionValue = "";
     private int mLoadNext = 0;
+    private String[] imageContours;
 
     private void initializeOpenCVDependencies() {
         try {
@@ -180,6 +182,7 @@ public class MainActivity extends AppCompatActivity
         imageTypes.add(getResources().getString(R.string.menu_cartoon_v2));
 
         imageSegmentation = getResources().getStringArray(R.array.menu_segmentation);
+        imageContours = getResources().getStringArray(R.array.menu_contours);
 
         final Window window = getWindow();
         window.addFlags(
@@ -294,6 +297,15 @@ public class MainActivity extends AppCompatActivity
 
         for (String s : imageSegmentation) {
             segSubMenu.add(MENU_GROUP_ID_SEG, i, Menu.NONE, s);
+            i++;
+        }
+
+        final SubMenu contSubMenu = menu.addSubMenu(
+                R.string.menu_image_seg);
+        i = 0;
+
+        for (String s : imageContours) {
+            contSubMenu.add(MENU_GROUP_ID_CONT, i, Menu.NONE, s);
             i++;
         }
 
