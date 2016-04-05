@@ -38,6 +38,7 @@ public class RecognitionActivity extends AppCompatActivity {
         String result = "===== RESULT =====\n\n";
 
         numObjects = intent.getIntExtra(EXTRA_RECIEVE_NUM, 0);
+        results.clear();
         DataSender dat = (DataSender) intent.getSerializableExtra(EXTRA_RECIEVE_CIRCULO);
         results.add(dat.getParliaments());
         dat = (DataSender) intent.getSerializableExtra(EXTRA_RECIEVE_RECTANGULO);
@@ -55,7 +56,6 @@ public class RecognitionActivity extends AppCompatActivity {
         tv.setMovementMethod(new ScrollingMovementMethod());
 
 
-        TextView res = (TextView) findViewById(R.id.result);
         String write = "";
         String[] objects = new String[]{"circulo ", "vagon ", "triangulo ", "rectangulo ", "rueda "};
         String[] parameters = new String[]{"area ", "perimeter ", "huM-1 ", "huM-2 ", "huM-3 "};
@@ -75,12 +75,11 @@ public class RecognitionActivity extends AppCompatActivity {
 
                 }
                 if (recognize)
-                    result += "Object " + x + " -->" + objects[i];
+                    result += " * Object " + x + " -->" + objects[i]+"\n";
                 write += "\n\n";
             }
         }
-        tv.setText(write);
-        res.setText(result);
+        tv.setText(write+"\n"+result);
     }
 
     public boolean recognizeClass(double[] values) {

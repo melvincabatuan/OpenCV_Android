@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 
 import vision.computer.opencv_android.R;
+import vision.computer.opencv_android.contours.Contours;
 import vision.computer.opencv_android.effects.Filters;
 import vision.computer.opencv_android.training.DataSender;
 import vision.computer.opencv_android.training.Recognition;
@@ -62,7 +63,9 @@ public class MainActivity extends AppCompatActivity
     private static final String TAG =
             MainActivity.class.getSimpleName();
 
-    private static final String SD_PATH = "/Project2/";
+    private static final String SD_PATH_REC = "/Project2/";
+    private static final String SD_PATH_CONT = "/Project3/";
+
 
     // A key for storing the index of the active camera.
     private static final String STATE_CAMERA_INDEX = "cameraIndex";
@@ -77,6 +80,7 @@ public class MainActivity extends AppCompatActivity
     private static final int MENU_GROUP_ID_SEG = 4;
     private static final int MENU_GROUP_ID_CONT = 5;
     private static Recognition rec;
+    private static Contours contours;
     ArrayList<String> imageTypes = new ArrayList<String>();
     String[] imageSegmentation;
     // The index of the active camera.
@@ -121,6 +125,7 @@ public class MainActivity extends AppCompatActivity
             };
     private Map<String, Integer> mPhotoType = new HashMap<String, Integer>();
     private ArrayList<String> mPhotoSeg = new ArrayList<String>();
+    private ArrayList<String> mPhotoCont = new ArrayList<String>();
     private String mSelectionValue = "";
     private int mLoadNext = 0;
     private String[] imageContours;
@@ -216,7 +221,8 @@ public class MainActivity extends AppCompatActivity
         mCameraView.setCvCameraViewListener(this);
         setContentView(mCameraView);
 
-        rec = new Recognition(findViewById(android.R.id.content), SD_PATH);
+        rec = new Recognition(findViewById(android.R.id.content), SD_PATH_REC);
+        contours = new Contours(findViewById(android.R.id.content), SD_PATH_CONT);
 
     }
 
@@ -301,7 +307,7 @@ public class MainActivity extends AppCompatActivity
         }
 
         final SubMenu contSubMenu = menu.addSubMenu(
-                R.string.menu_image_seg);
+                R.string.menu_contours);
         i = 0;
 
         for (String s : imageContours) {
@@ -322,7 +328,7 @@ public class MainActivity extends AppCompatActivity
         }
         if (item.getGroupId() == MENU_GROUP_ID_SIZE) {
             //Update of the camera resolution and frame re-creation
-            if (mPhotoSeg.isEmpty()) {
+            if (mPhotoSeg.isEmpty() || mPhotoCont.isEmpty()) {
                 mImageSizeIndex = item.getItemId();
                 recreate();
             }
@@ -332,6 +338,7 @@ public class MainActivity extends AppCompatActivity
             mStaticImage = false;
             mSelectionValue = (String) item.getTitle();
             mPhotoSeg.clear();
+            mPhotoCont.clear();
             if (item.getTitle().equals(getResources().getString(R.string.menu_normal)))
                 mPhotoType.clear();
 
@@ -425,6 +432,28 @@ public class MainActivity extends AppCompatActivity
             return true;
         }
 
+        if (item.getGroupId() == MENU_GROUP_ID_CONT) {
+            if (mImageSizeIndex > 4) {
+                Snackbar snackbar = Snackbar.make(findViewById(android.R.id.content),
+                        "Can't start. Change size to: " +
+                                mSupportedImageSizes.get(mImageSizeIndex).width
+                                + " x " +
+                                mSupportedImageSizes.get(mImageSizeIndex).height
+                                + "or less",
+                        Snackbar.LENGTH_LONG);
+                snackbar.show();
+            }
+            mPhotoType.clear();
+            if (item.getItemId() == 0)
+                mLoadNext = 0;
+            if (mPhotoCont.size() == 2)
+                mPhotoSeg.remove(1);
+            if (!mPhotoCont.contains(getResources().getStringArray(R.array.menu_contours)[item.getItemId()]))
+                mPhotoCont.add(getResources().getStringArray(R.array.menu_contours)[item.getItemId()]);
+            mStaticImage = false;
+            return true;
+        }
+
         Snackbar snackbar;
         switch (item.getItemId()) {
             case R.id.menu_take_photo:
@@ -443,7 +472,7 @@ public class MainActivity extends AppCompatActivity
                     snackbar = Snackbar.make(findViewById(android.R.id.content), "Adjust level " + mSelectionValue + " : " + value, Snackbar.LENGTH_LONG);
                     snackbar.show();
                 }
-                if (!mPhotoSeg.isEmpty()) {
+                if (mPhotoSeg.size()==1 || mPhotoCont.size()==1) {
                     mStaticImage = false;
                     mLoadNext = 1;
                 } else {
@@ -465,7 +494,7 @@ public class MainActivity extends AppCompatActivity
                         snackbar.show();
                     }
                 }
-                if (!mPhotoSeg.isEmpty()) {
+                if (mPhotoSeg.size()==1 || mPhotoCont.size()==1) {
                     mStaticImage = false;
                     mLoadNext = -1;
                 } else {
@@ -560,7 +589,38 @@ public class MainActivity extends AppCompatActivity
                 snackbar.show();
             }
 
-        } else {
+        }else if(!mStaticImage && !mPhotoCont.isEmpty()) {
+            if (mPhotoCont.get(0).equals("Load image")) {
+                if (mPhotoCont.size() < 2) {
+                    mStaticImage = true;
+                    mBgr = contours.loadImage(mLoadNext);
+                    Imgproc.resize(mBgr, mBgr,
+                            new org.opencv.core.Size(
+                                    mSupportedImageSizes.get(mImageSizeIndex).width,
+                                    mSupportedImageSizes.get(mImageSizeIndex).height));
+                }
+                else if (mPhotoCont.size() == 2 && mPhotoCont.get(1).equals("Sobel")) {
+                    mStaticImage = true;
+                    mBgr = contours.sobel(mBgr, 0);
+                }
+                else if (mPhotoCont.size() == 2 && mPhotoCont.get(1).equals("Scharr")) {
+                    mStaticImage = true;
+                    mBgr = contours.scharr(mBgr);
+                }
+                else if (mPhotoCont.size() == 2 && mPhotoCont.get(1).equals("Canny")) {
+                    mStaticImage = true;
+                    mBgr = contours.canny(mBgr);
+                }
+            }
+            else {
+                mPhotoSeg.clear();
+                Snackbar snackbar = Snackbar.make(findViewById(android.R.id.content), "Image not loaded", Snackbar.LENGTH_LONG);
+                snackbar.show();
+            }
+
+
+        }
+        else {
             if (!mStaticImage) {
                 Filters F = new Filters();
                 Imgproc.cvtColor(rgba, mBgr, Imgproc.COLOR_RGBA2BGR, 3);
