@@ -84,15 +84,12 @@ public class Contours {
         src=gaussian(src);
         Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
         Mat grad_x, grad_y;
-        Mat abs_grad_x = new Mat(), abs_grad_y = new Mat();
 
         grad_x=sobelHorizontal(src,type,false);
         grad_y=sobelVertical(src,type,false);
 
-        Core.convertScaleAbs(grad_x, abs_grad_x);
-        Core.convertScaleAbs(grad_y, abs_grad_y);
-        Core.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, rst);
-
+        Core.addWeighted(grad_x, 0.5, grad_y, 0.5, 0, rst);
+        Core.normalize(rst,rst,0,255,Core.NORM_MINMAX,CvType.CV_8U);
         Imgproc.cvtColor(rst, rst, Imgproc.COLOR_GRAY2BGR);
 
         return rst;
@@ -117,6 +114,7 @@ public class Contours {
             /// Gradient Y
             Imgproc.Scharr(src, grad_y, ddepth, 0, 1, scale, delta, Core.BORDER_DEFAULT);
         }
+        Core.convertScaleAbs(grad_y, grad_y);
 
         if(show){
             Mat dst= new Mat(grad_y.size(),grad_y.type());
@@ -159,7 +157,7 @@ public class Contours {
             /// Gradient X
             Imgproc.Scharr(src, grad_x, ddepth, 1, 0, scale, delta, Core.BORDER_DEFAULT);
         }
-        Core.convertScaleAbs(grad_x, grad_x);1
+        Core.convertScaleAbs(grad_x, grad_x);
 
         if(show){
             Mat dst= new Mat(grad_x.size(),grad_x.type());
@@ -204,7 +202,6 @@ public class Contours {
                 orientation.put(y,x,(atan/Math.PI)*128);
             }
         }
-
         Core.normalize(orientation,orientation,0,255,Core.NORM_MINMAX,CvType.CV_8U);
         Imgproc.cvtColor(orientation, orientation, Imgproc.COLOR_GRAY2BGR);
 
