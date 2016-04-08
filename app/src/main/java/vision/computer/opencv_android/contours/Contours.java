@@ -255,7 +255,7 @@ public class Contours {
         return canny;
     }
 
-    public Mat Hough(Mat src) {
+    public Mat Hough(Mat src, float threshold) {
 
         /*
         1- Trazar una línea en el horizonte, que será un vector horizontal
@@ -265,6 +265,25 @@ public class Contours {
         3- Si intersecta con el horizonte, aumentamos el contador de la posicion del vector donde haya intersectado
         4- Al final--> la posición del vector con más votos/intersecciones es el punto de fuga.
          */
+
+        Mat grad_x=sobelHorizontal(src,0,false);
+        Mat grad_y=sobelVertical(src,0,false);
+
+        for(int y=0;y<src.rows();y++)
+        {
+            for(int x=0;x<src.cols();x++)
+            {
+                float a=(float)grad_y.get(y,x)[0];
+                float b=(float)grad_x.get(y,x)[0];
+                float mag = (float) Math.sqrt(a*a+b*b);
+
+                if(mag>threshold){
+                    float atan= Core.fastAtan2(a,b);
+                    float rad= (float) ((atan/Math.PI)*128);
+                }
+            }
+        }
+
 
         return src;
     }
