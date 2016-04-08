@@ -34,7 +34,11 @@
 
     <string-array name="menu_contours">
         <item>Load image</item>
-        <item>Sobel</item>
+        <item>SobelX</item>
+        <item>SobelY</item>
+        <item>SobelMagnitude</item>
+        <item>SobelOrient</item>
+        <item>SobelContorno</item>
         <item>Scharr</item>
         <item>Canny</item>
         <item>Punto Central</item>

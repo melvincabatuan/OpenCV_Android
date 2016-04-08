@@ -131,30 +131,6 @@ public class MainActivity extends AppCompatActivity
     private String[] imageContours;
 
     private void initializeOpenCVDependencies() {
-        try {
-            // Copy the resource into a temp file so OpenCV can load it
-            InputStream is = getResources().openRawResource(R.raw.lbpcascade_frontalface);
-            File cascadeDir = getDir("cascade", Context.MODE_PRIVATE);
-            File mCascadeFile = new File(cascadeDir, "lbpcascade_frontalface.xml");
-            FileOutputStream os = new FileOutputStream(mCascadeFile);
-
-            byte[] buffer = new byte[4096];
-            int bytesRead;
-            while ((bytesRead = is.read(buffer)) != -1) {
-                os.write(buffer, 0, bytesRead);
-            }
-            is.close();
-            os.close();
-
-            // Load the cascade classifier
-            cascadeClassifier = new CascadeClassifier("android.resource://OpenCV_Android/app/src/main/raw/haarcascade_frontalface_alt.xml");
-            if (cascadeClassifier.empty()) {
-                throw new RuntimeException("CASCADE EMPTY");
-            }
-        } catch (Exception e) {
-            Log.e("OpenCVActivity", "Error loading cascade", e);
-        }
-
         // And we are ready to go
         mCameraView.enableView();
         mBgr = new Mat();
@@ -599,9 +575,25 @@ public class MainActivity extends AppCompatActivity
                                     mSupportedImageSizes.get(mImageSizeIndex).width,
                                     mSupportedImageSizes.get(mImageSizeIndex).height));
                 }
-                else if (mPhotoCont.size() == 2 && mPhotoCont.get(1).equals("Sobel")) {
+                else if (mPhotoCont.size() == 2 && mPhotoCont.get(1).equals("SobelContorno")) {
                     mStaticImage = true;
                     mBgr = contours.sobel(mBgr, 0);
+                }
+                else if (mPhotoCont.size() == 2 && mPhotoCont.get(1).equals("SobelX")) {
+                    mStaticImage = true;
+                    mBgr = contours.sobelHorizontal(mBgr, 0,true);
+                }
+                else if (mPhotoCont.size() == 2 && mPhotoCont.get(1).equals("SobelY")) {
+                    mStaticImage = true;
+                    mBgr = contours.sobelVertical(mBgr, 0,true);
+                }
+                else if (mPhotoCont.size() == 2 && mPhotoCont.get(1).equals("SobelMagnitude")) {
+                    mStaticImage = true;
+                    mBgr = contours.sobelMagnitude(mBgr, 0);
+                }
+                else if (mPhotoCont.size() == 2 && mPhotoCont.get(1).equals("SobelOrient")) {
+                    mStaticImage = true;
+                    mBgr = contours.sobelOrientation(mBgr, 0);
                 }
                 else if (mPhotoCont.size() == 2 && mPhotoCont.get(1).equals("Scharr")) {
                     mStaticImage = true;

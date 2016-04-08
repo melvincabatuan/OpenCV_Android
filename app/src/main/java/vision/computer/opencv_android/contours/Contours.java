@@ -7,6 +7,7 @@ import android.view.View;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
@@ -79,28 +80,14 @@ public class Contours {
     }
     public Mat sobel(Mat src, int type) {
 
-        int scale = 1;
-        int delta = 0;
-        int ddepth = CvType.CV_16S;
         Mat rst = new Mat();
         src=gaussian(src);
         Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
-        Mat grad_x = new Mat(), grad_y = new Mat();
+        Mat grad_x, grad_y;
         Mat abs_grad_x = new Mat(), abs_grad_y = new Mat();
 
-        if (type==0){
-            /// Gradient X
-            Imgproc.Sobel(src, grad_x, ddepth, 1, 0, 3, scale, delta, Core.BORDER_DEFAULT);
-            /// Gradient Y
-            Imgproc.Sobel(src, grad_y, ddepth, 0, 1, 3, scale, delta, Core.BORDER_DEFAULT);
-        }
-        else{
-            /// Gradient X
-            Imgproc.Scharr(src, grad_x, ddepth, 1, 0, scale, delta, Core.BORDER_DEFAULT);
-            /// Gradient Y
-            Imgproc.Scharr(src, grad_y, ddepth, 0, 1, scale, delta, Core.BORDER_DEFAULT);
-        }
-
+        grad_x=sobelHorizontal(src,type,false);
+        grad_y=sobelVertical(src,type,false);
 
         Core.convertScaleAbs(grad_x, abs_grad_x);
         Core.convertScaleAbs(grad_y, abs_grad_y);
@@ -110,6 +97,127 @@ public class Contours {
 
         return rst;
     }
+
+    public Mat sobelVertical(Mat src, int type,boolean show) {
+
+        int scale = 1;
+        int delta = 0;
+        int ddepth = CvType.CV_16S;
+        if(show){
+            src=gaussian(src);
+            Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
+        }
+        Mat grad_y = new Mat();
+
+        if (type==0){
+            /// Gradient Y
+            Imgproc.Sobel(src, grad_y, ddepth, 0, 1, 3, scale, delta, Core.BORDER_DEFAULT);
+        }
+        else{
+            /// Gradient Y
+            Imgproc.Scharr(src, grad_y, ddepth, 0, 1, scale, delta, Core.BORDER_DEFAULT);
+        }
+
+        if(show){
+            /*Core.multiply(grad_y,new Scalar(0.5),grad_y);
+            Core.add(grad_y,new Scalar(128),grad_y);*/
+            Core.MinMaxLocResult res = Core.minMaxLoc(grad_y);
+            grad_y.convertTo(grad_y, CvType.CV_8U, 255.0 / (res.maxVal - res.minVal), -res.minVal * 255.0 / (res.maxVal - res.minVal));
+            Core.bitwise_not(grad_y, grad_y);
+            Imgproc.cvtColor(grad_y, grad_y, Imgproc.COLOR_GRAY2BGR);
+            return grad_y;
+        }else{
+            return grad_y;
+        }
+    }
+
+    public Mat sobelHorizontal(Mat src, int type, boolean show) {
+
+        int scale = 1;
+        int delta = 0;
+        int ddepth = CvType.CV_32F;
+        Mat grad_x = new Mat();
+
+        if(show){
+            src=gaussian(src);
+            Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
+        }
+
+        if (type==0){
+            /// Gradient X
+            Imgproc.Sobel(src, grad_x, ddepth, 1, 0, 3, scale, delta, Core.BORDER_DEFAULT);
+        }
+        else{
+            /// Gradient X
+            Imgproc.Scharr(src, grad_x, ddepth, 1, 0, scale, delta, Core.BORDER_DEFAULT);
+        }
+
+        if(show){
+            //Core.multiply(grad_x,new Scalar(0.5),grad_x);
+            //Core.add(grad_x,new Scalar(128),grad_x);
+            //Core.normalize(grad_x,grad_x,0,255,Core.NORM_MINMAX,CvType.CV_8U);
+            Core.MinMaxLocResult res = Core.minMaxLoc(grad_x);
+            grad_x.convertTo(grad_x, CvType.CV_8U, 255.0 / (res.maxVal - res.minVal), -res.minVal * 255.0 / (res.maxVal - res.minVal));
+            Core.bitwise_not(grad_x, grad_x);
+            Imgproc.cvtColor(grad_x, grad_x, Imgproc.COLOR_GRAY2BGR);
+            return grad_x;
+        }else{
+            return grad_x;
+        }
+    }
+
+
+    public Mat sobelOrientation(Mat src, int type) {
+
+        //src=gaussian(src);
+        Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
+
+        Mat abs_grad_x=new Mat(),abs_grad_y=new Mat();
+        Mat grad_x = sobelHorizontal(src,type,false);
+        Mat grad_y = sobelVertical(src,type,false);
+
+        Mat orientation= new Mat(grad_x.rows(),grad_y.cols(),CvType.CV_32F);
+        grad_x.convertTo(grad_x,CvType.CV_32F);
+        grad_y.convertTo(grad_y,CvType.CV_32F);
+
+        for(int y=0;y<grad_x.rows();y++)
+        {
+            for(int x=0;x<grad_y.cols();x++)
+            {
+                float a=(float)grad_y.get(y,x)[0];
+                float b=(float)grad_x.get(y,x)[0];
+                float atan= Core.fastAtan2(a,b);
+                orientation.put(y,x,atan);
+            }
+        }
+
+        Core.normalize(orientation,orientation,0,255,Core.NORM_MINMAX,CvType.CV_8U);
+                //cv::normalize(orientation, orientation, 0x00, 0xFF, cv::NORM_MINMAX, CV_8U);
+        Imgproc.cvtColor(orientation, orientation, Imgproc.COLOR_GRAY2BGR);
+
+        return orientation;
+    }
+
+    public Mat sobelMagnitude(Mat src, int type) {
+
+        //src=gaussian(src);
+        Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
+
+        Mat grad_x = sobelHorizontal(src,type,false);
+        Mat grad_y = sobelVertical(src,type,false);
+        grad_x.convertTo(grad_x,CvType.CV_32F);
+        grad_y.convertTo(grad_y,CvType.CV_32F);
+
+        Mat mag= new Mat(grad_x.rows(),grad_y.cols(),CvType.CV_32F);
+        Core.magnitude(grad_x,grad_y,mag);
+
+        Core.normalize(mag,mag,0,255,Core.NORM_MINMAX,CvType.CV_8U);
+
+        Imgproc.cvtColor(mag, mag, Imgproc.COLOR_GRAY2BGR);
+
+        return mag;
+    }
+
 
     public Mat scharr(Mat src) {
         return sobel(src,1);
