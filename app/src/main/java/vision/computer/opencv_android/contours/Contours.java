@@ -102,7 +102,7 @@ public class Contours {
 
         int scale = 1;
         int delta = 0;
-        int ddepth = CvType.CV_16S;
+        int ddepth = CvType.CV_32F;
         if(show){
             src=gaussian(src);
             Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
@@ -119,13 +119,21 @@ public class Contours {
         }
 
         if(show){
-            /*Core.multiply(grad_y,new Scalar(0.5),grad_y);
-            Core.add(grad_y,new Scalar(128),grad_y);*/
-            Core.MinMaxLocResult res = Core.minMaxLoc(grad_y);
-            grad_y.convertTo(grad_y, CvType.CV_8U, 255.0 / (res.maxVal - res.minVal), -res.minVal * 255.0 / (res.maxVal - res.minVal));
-            Core.bitwise_not(grad_y, grad_y);
-            Imgproc.cvtColor(grad_y, grad_y, Imgproc.COLOR_GRAY2BGR);
-            return grad_y;
+            Mat dst= new Mat(grad_y.size(),grad_y.type());
+            for(int y=0;y<grad_y.rows();y++)
+            {
+                for(int x=0;x<grad_y.cols();x++)
+                {
+                    float a=(float)grad_y.get(y,x)[0];
+                    dst.put(y,x,(a/2)+128);
+                }
+            }
+            //Core.MinMaxLocResult res = Core.minMaxLoc(grad_y);
+            //grad_y.convertTo(grad_y, CvType.CV_8U, 255.0 / (res.maxVal - res.minVal), -res.minVal * 255.0 / (res.maxVal - res.minVal));
+            //Core.bitwise_not(grad_y, grad_y);
+            Core.normalize(dst,dst,0,255,Core.NORM_MINMAX,CvType.CV_8U);
+            Imgproc.cvtColor(dst, dst, Imgproc.COLOR_GRAY2BGR);
+            return dst;
         }else{
             return grad_y;
         }
@@ -151,16 +159,22 @@ public class Contours {
             /// Gradient X
             Imgproc.Scharr(src, grad_x, ddepth, 1, 0, scale, delta, Core.BORDER_DEFAULT);
         }
+        Core.convertScaleAbs(grad_x, grad_x);1
 
         if(show){
-            //Core.multiply(grad_x,new Scalar(0.5),grad_x);
-            //Core.add(grad_x,new Scalar(128),grad_x);
-            //Core.normalize(grad_x,grad_x,0,255,Core.NORM_MINMAX,CvType.CV_8U);
-            Core.MinMaxLocResult res = Core.minMaxLoc(grad_x);
-            grad_x.convertTo(grad_x, CvType.CV_8U, 255.0 / (res.maxVal - res.minVal), -res.minVal * 255.0 / (res.maxVal - res.minVal));
-            Core.bitwise_not(grad_x, grad_x);
-            Imgproc.cvtColor(grad_x, grad_x, Imgproc.COLOR_GRAY2BGR);
-            return grad_x;
+            Mat dst= new Mat(grad_x.size(),grad_x.type());
+            for(int y=0;y<grad_x.rows();y++)
+            {
+                for(int x=0;x<grad_x.cols();x++)
+                {
+                    float a=(float)grad_x.get(y,x)[0];
+                    dst.put(y,x,(a/2)+128);
+                }
+            }
+            Core.bitwise_not(dst, dst);
+            Core.normalize(dst,dst,0,255,Core.NORM_MINMAX,CvType.CV_8U);
+            Imgproc.cvtColor(dst, dst, Imgproc.COLOR_GRAY2BGR);
+            return dst;
         }else{
             return grad_x;
         }
@@ -169,16 +183,16 @@ public class Contours {
 
     public Mat sobelOrientation(Mat src, int type) {
 
-        //src=gaussian(src);
+        src=gaussian(src);
         Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
 
         Mat abs_grad_x=new Mat(),abs_grad_y=new Mat();
         Mat grad_x = sobelHorizontal(src,type,false);
         Mat grad_y = sobelVertical(src,type,false);
+        Core.convertScaleAbs(grad_x, grad_x);
+        Core.convertScaleAbs(grad_y, grad_y);
 
         Mat orientation= new Mat(grad_x.rows(),grad_y.cols(),CvType.CV_32F);
-        grad_x.convertTo(grad_x,CvType.CV_32F);
-        grad_y.convertTo(grad_y,CvType.CV_32F);
 
         for(int y=0;y<grad_x.rows();y++)
         {
@@ -187,12 +201,11 @@ public class Contours {
                 float a=(float)grad_y.get(y,x)[0];
                 float b=(float)grad_x.get(y,x)[0];
                 float atan= Core.fastAtan2(a,b);
-                orientation.put(y,x,atan);
+                orientation.put(y,x,(atan/Math.PI)*128);
             }
         }
 
         Core.normalize(orientation,orientation,0,255,Core.NORM_MINMAX,CvType.CV_8U);
-                //cv::normalize(orientation, orientation, 0x00, 0xFF, cv::NORM_MINMAX, CV_8U);
         Imgproc.cvtColor(orientation, orientation, Imgproc.COLOR_GRAY2BGR);
 
         return orientation;
@@ -200,16 +213,24 @@ public class Contours {
 
     public Mat sobelMagnitude(Mat src, int type) {
 
-        //src=gaussian(src);
+        src=gaussian(src);
         Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
 
         Mat grad_x = sobelHorizontal(src,type,false);
         Mat grad_y = sobelVertical(src,type,false);
-        grad_x.convertTo(grad_x,CvType.CV_32F);
-        grad_y.convertTo(grad_y,CvType.CV_32F);
+        Core.convertScaleAbs(grad_x, grad_x);
+        Core.convertScaleAbs(grad_y, grad_y);
 
-        Mat mag= new Mat(grad_x.rows(),grad_y.cols(),CvType.CV_32F);
-        Core.magnitude(grad_x,grad_y,mag);
+        Mat mag= new Mat(grad_x.size(),CvType.CV_32F);
+        for(int y=0;y<grad_x.rows();y++)
+        {
+            for(int x=0;x<grad_y.cols();x++)
+            {
+                float a=(float)grad_y.get(y,x)[0];
+                float b=(float)grad_x.get(y,x)[0];
+                mag.put(y,x,Math.sqrt(a*a+b*b));
+            }
+        }
 
         Core.normalize(mag,mag,0,255,Core.NORM_MINMAX,CvType.CV_8U);
 
@@ -224,6 +245,10 @@ public class Contours {
     }
 
     public Mat canny (Mat src) {
+
+        /*
+        ESTA MAL, NO VALE LA FUNCION Canny
+         */
         Mat canny = new Mat();
         int min_threshold=50;
         int ratio = 3;
@@ -232,4 +257,19 @@ public class Contours {
         Imgproc.cvtColor(canny, canny, Imgproc.COLOR_GRAY2BGR);
         return canny;
     }
+
+    public Mat Hough(Mat src) {
+
+        /*
+        1- Trazar una línea en el horizonte, que será un vector horizontal
+        2- Recorrer todos los pixeles de la imagen y comprobar la magnitud de su gradiente,
+            si supera un cierto threshold la magnitud (por ejemplo 25), entonces miramos su dirección
+            y trazamos una línea.
+        3- Si intersecta con el horizonte, aumentamos el contador de la posicion del vector donde haya intersectado
+        4- Al final--> la posición del vector con más votos/intersecciones es el punto de fuga.
+         */
+
+        return src;
+    }
+
 }
