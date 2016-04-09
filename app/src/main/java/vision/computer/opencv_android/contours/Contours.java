@@ -269,14 +269,12 @@ public class Contours {
                 float mag = (float) Math.sqrt(a*a+b*b);
 
                 if(mag>threshold){
-                    
                     float atan= Core.fastAtan2(a,b);
                     float rad= (float) ((atan/Math.PI)*128);
 
                     int x = j -src.cols()/2;
                     int y = src.rows()/2 - i;
                     double p = x*Math.cos(rad) + y*Math.sin(rad);
-
                 }
             }
         }
