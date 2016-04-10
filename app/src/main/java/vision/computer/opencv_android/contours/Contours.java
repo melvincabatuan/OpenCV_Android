@@ -15,7 +15,13 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Random;
 
 import vision.computer.opencv_android.training.TrainingData;
 
@@ -61,6 +67,14 @@ public class Contours {
             snackbar.show();
             return image;
         } else return null;
+    }
+
+    public static double round(double value, int places) {
+        if (places < 0) throw new IllegalArgumentException();
+
+        BigDecimal bd = new BigDecimal(value);
+        bd = bd.setScale(places, RoundingMode.HALF_UP);
+        return bd.doubleValue();
     }
 
     private ArrayList<String> directories(String path) {
@@ -233,27 +247,128 @@ public class Contours {
         return canny;
     }
 
-    private int cvRound(double x) {
-        int y;
-        if (x >= (int) x + 0.5)
-            y = (int) x++;
-        else
-            y = (int) x;
-        return y;
+    private Point intersection(Point o1, Point p1, Point o2, Point p2)
+
+    {
+        Point x = new Point(o2.x - o1.x, o2.y - o1.y);
+        Point d1 = new Point(p1.x - o1.x, p1.y - o1.y);
+        Point d2 = new Point(p2.x - o2.x, p2.y - o2.y);
+
+        double cross = d1.x * d2.y - d1.y * d2.x;
+        if (Math.abs(cross) < /*EPS*/1e-8)
+            return null;
+
+        double t1 = (x.x * d2.y - x.y * d2.x) / cross;
+        Point r = new Point(o1.x + d1.x * t1, o1.y + d1.y + t1);
+        return r;
     }
 
     public Mat Hough(Mat src, int threshold) {
-        Mat lines = new Mat();
+
+        Mat grad_x = sobelHorizontal(src, 0, false);
+        Mat grad_y = sobelVertical(src, 0, false);
+
+        HashMap<Double[], Integer> votes = new HashMap<Double[], Integer>();
+        Rect imageRect = new Rect(new Point(0, 0), new Point(src.rows(), src.cols()));
+
+        //Horizonte
+        int y0 = src.rows() / 2;
+        int x0 = 0;
+        int x1 = src.cols();
+
+        Point s0 = new Point(x0, y0);
+        Point e0 = new Point(x1, y0);
+
+
+        Imgproc.clipLine(imageRect, s0, e0);
+        Imgproc.line(src, s0, e0, new Scalar(255, 0, 0), 1);
+
+        for (int y = 0; y < src.rows(); y++) {
+            for (int x = 0; x < src.cols(); x++) {
+                float a = (float) grad_y.get(y, x)[0];
+                float b = (float) grad_x.get(y, x)[0];
+                float mag = (float) Math.sqrt(a * a + b * b);
+
+                if (mag > threshold) {
+
+                    float atan = Core.fastAtan2(a, b);
+
+                    //Se hace el calculo de Theta
+                    double theta = (float) ((atan / Math.PI) * 128);
+
+                    double cos = Math.cos(theta);
+                    double sin = Math.sin(theta);
+
+                    //Se hace el calculo de Rho
+                    double rho = a * cos + b * sin;
+
+                    double iniX = a * rho;
+                    double iniY = b * rho;
+
+                    /*
+                    Se obtienen dos puntos de la recta que corta por a y b usando la ecuacion de la recta
+                     */
+                    Point p1 = new Point(iniX + 1000 * -sin, iniY + 1000 * cos);
+                    Point p2 = new Point(iniX - 1000 * -sin, iniY - 1000 * cos);
+
+                    /*
+                    Se comprueba que efectivamente ese punto intersecta con la linea del horizonte
+                     */
+                    if (intersection(p1, p2, s0, e0) != null) {
+                        Double[] key = new Double[]{round(theta, 2), round(rho, 2)};
+
+                        if (votes.containsKey(key)) {
+                            int n = votes.get(key) + 1;
+                            votes.remove(key);
+                            votes.put(new Double[]{theta, rho}, n);
+                        } else
+                            votes.put(key, 1);
+                    }
+                }
+            }
+        }
+        Iterator it = votes.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<Double[], Integer> pair = (Map.Entry) it.next();
+            //Se obtienen las rectas que obtienen un nº de votos mayor que X
+            if (pair.getValue() > 0) {
+                //Se hace el calculo de Theta
+                double theta = pair.getKey()[0];
+
+                double cos = Math.cos(theta);
+                double sin = Math.sin(theta);
+
+                //Se hace el calculo de Rho
+                double rho = pair.getKey()[1];
+                double a = new Random().nextDouble()*10;
+                double b = (rho - a*cos)/sin;
+                double iniX = a * rho;
+                double iniY = b * rho;
+
+                /*
+                Se obtienen dos puntos de la recta que corta por a y b usando la ecuacion de la recta
+                 */
+                Point p1 = new Point(iniX + 1000 * -sin, iniY + 1000 * cos);
+                Point p2 = new Point(iniX - 1000 * -sin, iniY - 1000 * cos);
+                Imgproc.clipLine(imageRect, p1, p2);
+                Imgproc.line(src, p1, p2, new Scalar(255, 0, 0), 1);
+            }
+            it.remove(); // avoids a ConcurrentModificationException
+        }
+        return src;
+    }
+      /*Mat lines = new Mat();
+        //Uso en Probabilistic Hough Transform
         int minLineSize = 30;
         int lineGap = 10;
-        /*
+
             HoughLines(InputArray, OutputArray, double rho, double theta, int threshold, double srn=0, double stn=0 )
             Hough transformation
             A line in one picture is actually an edge. Hough transform scans the whole image and using a transformation
             that converts all white pixel cartesian coordinates in polar coordinates; the black pixels are left out.
             So you won't be able to get a line if you first don't detect edges, because HoughLines() don't know how
             to behave when there's a grayscale.
-         */
+
 
         src = scharr(src);
         Rect imageRect = new Rect(new Point(0,0), new Point(src.rows(),src.cols()));
@@ -262,7 +377,7 @@ public class Contours {
 
         for (int x = 0; x < lines.cols(); x++) {
 
-            double rho = lines.get(x, 0)[0];
+            /*double rho = lines.get(x, 0)[0];
             double theta = lines.get(x, 1)[0];
 
             double a = Math.cos(theta);
@@ -273,68 +388,22 @@ public class Contours {
             Point p1 = new Point(cvRound(x0 + 1000 * (-b)), cvRound(y0 + 1000 * (a)));
             Point p2 = new Point(cvRound(x0 - 1000 * (-b)), cvRound(y0 - 1000 * (a)));
 
+            double[] vec = lines.get(0, x);
+            double x1 = vec[0],
+                    y1 = vec[1],
+                    x2 = vec[2],
+                    y2 = vec[3];
+            Point p1 = new Point(x1, y1);
+            Point p2 = new Point(x2, y2);
+
             //Starting point over the horizon and ending point below it or the other way around
             if ((p1.y > (src.rows() / 2) && p2.y < (src.rows() / 2)) ||
                     (p1.y < (src.rows() / 2) && p2.y < (src.rows() / 2))) {
                 Imgproc.clipLine(imageRect,p1,p2);
-                Imgproc.line(src, p1, p2, new Scalar(255, 0, 0), 3);
+                Imgproc.line(src, p1, p2, new Scalar(255, 0, 0), 1);
             }
         }
 
         return src;
-
-        /*Mat grad_x = sobelHorizontal(src, 0, false);
-        Mat grad_y = sobelVertical(src, 0, false);
-
-        HashMap<Double[], Integer> votes = new HashMap<Double[], Integer>();
-
-        //Horizonte
-        int y0 = src.rows()/2;
-        int x0 = 0;
-
-        int y1 = src.rows()/2;
-        int x1 = src.cols();
-
-        for (int y = 0; y < src.rows(); y++) {
-            for (int x = 0; x < src.cols(); x++) {
-                float a = (float) grad_y.get(y, x)[0];
-                float b = (float) grad_x.get(y, x)[0];
-                float mag = (float) Math.sqrt(a * a + b * b);
-
-                if (mag > threshold) {
-                    float atan = Core.fastAtan2(a, b);
-                    double theta = (float) ((atan / Math.PI) * 128);
-
-                    double ro = a * Math.cos(theta) + b * Math.sin(theta);
-                    Double[] key = new Double[]{theta, ro};
-
-                    if (votes.containsKey(key)) {
-                        int n = votes.get(key) + 1;
-                        votes.remove(key);
-                        votes.put(new Double[]{theta, ro}, n);
-                    } else
-                        votes.put(key, 1);
-                }
-            }
-        }
-        /*
-
-        //BGR Mat
-        src = canny(src);
-        HashMap<Double[], Integer> votes = new HashMap<Double[], Integer>();
-
-        for (int i = 0; i < src.rows(); i++) {
-            for (int j = 0; i < src.cols(); j++) {
-                if (Math.sqrt(i * i + j * j) >= threshold) {
-                    float x = j - src.cols() / 2;
-                    float y = src.rows() / 2 - i;
-                    double theta = Core.fastAtan2(x, y);;
-                    double ro = x * Math.cos(theta) + y * Math.sin(theta);
-
-                }
-            }
-        }
 */
-    }
-
 }
