@@ -603,6 +603,10 @@ public class MainActivity extends AppCompatActivity
                     mStaticImage = true;
                     mBgr = contours.canny(mBgr);
                 }
+                else if (mPhotoCont.size() == 2 && mPhotoCont.get(1).equals("Punto Central")) {
+                    mStaticImage = true;
+                    mBgr = contours.Hough(mBgr,15);
+                }
             }
             else {
                 mPhotoSeg.clear();
