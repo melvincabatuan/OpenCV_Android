@@ -279,7 +279,6 @@ public class Contours {
         Point s0 = new Point(x0, y0);
         Point e0 = new Point(x1, y0);
 
-
         Imgproc.clipLine(imageRect, s0, e0);
         Imgproc.line(src, s0, e0, new Scalar(255, 0, 0), 1);
 
@@ -314,7 +313,9 @@ public class Contours {
                     /*
                     Se comprueba que efectivamente ese punto intersecta con la linea del horizonte
                      */
-                    if (intersection(p1, p2, s0, e0) != null) {
+                    Point inters = intersection(p1, p2, s0, e0);
+                    if (inters != null && inters.x <= src.cols() && inters.y >= src.rows()
+                            && inters.x >= 0 && inters.y >= 0) {
                         Double[] key = new Double[]{round(theta, 2), round(rho, 2)};
 
                         if (votes.containsKey(key)) {
@@ -350,6 +351,10 @@ public class Contours {
                  */
                 Point p1 = new Point(iniX + 1000 * -sin, iniY + 1000 * cos);
                 Point p2 = new Point(iniX - 1000 * -sin, iniY - 1000 * cos);
+
+                /*
+                Se dibuja esa recta
+                 */
                 Imgproc.clipLine(imageRect, p1, p2);
                 Imgproc.line(src, p1, p2, new Scalar(255, 0, 0), 1);
             }
