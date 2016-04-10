@@ -2,6 +2,7 @@ package vision.computer.opencv_android.contours;
 
 import android.os.Environment;
 import android.support.design.widget.Snackbar;
+import android.util.Log;
 import android.view.View;
 
 import org.opencv.core.Core;
@@ -18,6 +19,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import vision.computer.opencv_android.training.TrainingData;
@@ -291,30 +293,37 @@ public class Contours {
                             lineArray.add(new Line(l1,l2));
                             votes.remove(intersection);
                             votes.put(intersection, lineArray);
-                        } else
+                        } else {
                             ArrayList<Line> lineArray = new ArrayList<>();
-                            lineArray.add(new Line(l1,l2));
+                            lineArray.add(new Line(l1, l2));
                             votes.put(intersection, lineArray);
+                        }
                     }
                 }
             }
         }
 
         Point fuga = null;
+        ArrayList<Line> lineasFuga=null;
         int maxValue=0;
         Iterator it = votes.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<Point,ArrayList<Line>> pair = (Map.Entry)it.next();
             if(pair.getValue().size()>maxValue){
                 fuga=pair.getKey();
+                lineasFuga=pair.getValue();
                 maxValue=pair.getValue().size();
                 System.out.println(pair.getKey() + " = " + pair.getValue().size());
             }
             it.remove();
 
         }
-        Imgproc.line(src,new Point(x0_h,y0_h),new Point(x1_h,y1_h), new Scalar (255,0,0),1);
-        Imgproc.circle(src,fuga,3,new Scalar(0, 0, 255),3);
+        for(Line l : lineasFuga){
+            Log.d("DBG", "lineas: "+l.getPoint1()+"  "+l.getPoint2());
+            Imgproc.line(src,l.getPoint1(),l.getPoint2(), new Scalar (255,0,0),1);
+        }
+        Imgproc.line(src,new Point(x0_h,y0_h),new Point(x1_h,y1_h), new Scalar (0,0,255),2);
+        Imgproc.circle(src,fuga,3,new Scalar(255, 0, 0),3);
         return src;
     }
 
