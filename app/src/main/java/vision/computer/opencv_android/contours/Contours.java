@@ -16,6 +16,9 @@ import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import vision.computer.opencv_android.training.TrainingData;
 
@@ -105,10 +108,9 @@ public class Contours {
         int scale = 1;
         int delta = 0;
         int ddepth = CvType.CV_16S;
-        if (show) {
-            src = gaussian(src);
-            Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
-        }
+        src = gaussian(src);
+        Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
+
         Mat grad_y = new Mat(src.size(), src.type());
 
         if (type == 0) {
@@ -130,6 +132,7 @@ public class Contours {
             Imgproc.cvtColor(dst, dst, Imgproc.COLOR_GRAY2BGR);
             return dst;
         } else {
+            Imgproc.cvtColor(src, src, Imgproc.COLOR_GRAY2BGR);
             return grad_y;
         }
     }
@@ -139,11 +142,8 @@ public class Contours {
         int scale = 1;
         int delta = 0;
         int ddepth = CvType.CV_16S;
-
-        if (show) {
-            src = gaussian(src);
-            Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
-        }
+        src = gaussian(src);
+        Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
         Mat grad_x = new Mat(src.size(), src.type());
         if (type == 0) {
             /// Gradient X
@@ -164,6 +164,7 @@ public class Contours {
             Imgproc.cvtColor(dst, dst, Imgproc.COLOR_GRAY2BGR);
             return dst;
         } else {
+            Imgproc.cvtColor(src, src, Imgproc.COLOR_GRAY2BGR);
             return grad_x;
         }
     }
@@ -185,6 +186,9 @@ public class Contours {
                 short a = (short) grad_y.get(y, x)[0];
                 short b = (short) grad_x.get(y, x)[0];
                 float atan = (float) Core.fastAtan2(a, b);
+                if (atan<0){
+                    atan= (float) (2*Math.PI+atan);
+                }
                 orientation.put(y, x, (atan / Math.PI) * 128);
             }
         }
@@ -246,106 +250,85 @@ public class Contours {
         Mat lines = new Mat();
         int minLineSize = 10;
         int lineGap = 10;
-        /*
-            HoughLines(InputArray, OutputArray, double rho, double theta, int threshold, double srn=0, double stn=0 )
-            Hough transformation
-            A line in one picture is actually an edge. Hough transform scans the whole image and using a transformation
-            that converts all white pixel cartesian coordinates in polar coordinates; the black pixels are left out.
-            So you won't be able to get a line if you first don't detect edges, because HoughLines() don't know how
-            to behave when there's a grayscale.
-         */
 
-        src = sobel(src,0);
-        Rect imageRect = new Rect(new Point(0,0), new Point(src.rows(),src.cols()));
-        Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
-        Imgproc.HoughLines(src, lines, 1, Math.PI / 90, threshold);
+        Mat grads= src.clone();
+        Mat grad_x = sobelHorizontal(grads, 0, false);
+        Mat grad_y = sobelVertical(grads, 0, false);
 
-        for (int x = 0; x < lines.cols(); x++) {
-
-            double rho = lines.get(x, 0)[0];
-            double theta = lines.get(x, 1)[0];
-
-            double a = Math.cos(theta);
-            double b = Math.sin(theta);
-            double x0 = a * rho;
-            double y0 = b * rho;
-
-            Point p1 = new Point(cvRound(x0 + 1000 * (-b)), cvRound(y0 + 1000 * (a)));
-            Point p2 = new Point(cvRound(x0 - 1000 * (-b)), cvRound(y0 - 1000 * (a)));
-
-            //Starting point over the horizon and ending point below it or the other way around
-            if ((p1.y > (src.rows() / 2) && p2.y < (src.rows() / 2)) ||
-                    (p1.y < (src.rows() / 2) && p2.y < (src.rows() / 2))) {
-                Imgproc.clipLine(imageRect,p1,p2);
-                Imgproc.line(src, p1, p2, new Scalar(255, 0, 0), 3);
-            }
-        }
-        Imgproc.cvtColor(src, src, Imgproc.COLOR_GRAY2BGR);
-
-        return src;
-
-        /*Mat grad_x = sobelHorizontal(src, 0, false);
-        Mat grad_y = sobelVertical(src, 0, false);
-
-        HashMap<Double[], Integer> votes = new HashMap<Double[], Integer>();
+        HashMap<Point, ArrayList<Line>> votes = new HashMap<Point, ArrayList<Line>>();
 
         //Horizonte
-        int y0 = src.rows()/2;
-        int x0 = 0;
+        float y0_h = src.rows()/2;
+        float x0_h = 0;
 
-        int y1 = src.rows()/2;
-        int x1 = src.cols();
+        float y1_h = src.rows()/2;
+        float x1_h = src.cols();
 
         for (int y = 0; y < src.rows(); y++) {
             for (int x = 0; x < src.cols(); x++) {
-                float a = (float) grad_y.get(y, x)[0];
-                float b = (float) grad_x.get(y, x)[0];
-                float mag = (float) Math.sqrt(a * a + b * b);
+                float a1 = (float) grad_x.get(y, x)[0];
+                float b1 = (float) grad_y.get(y, x)[0];
+                float mag = (float) Math.sqrt(a1 * a1 + b1 * b1);
 
-<<<<<<< HEAD
-                if(mag>threshold){
-                    float atan= Core.fastAtan2(a,b);
-                    float rad= (float) ((atan/Math.PI)*128);
-
-                    int x = j -src.cols()/2;
-                    int y = src.rows()/2 - i;
-                    double p = x*Math.cos(rad) + y*Math.sin(rad);
-=======
                 if (mag > threshold) {
-                    float atan = Core.fastAtan2(a, b);
+                    float atan = Core.fastAtan2(b1, a1);
                     double theta = (float) ((atan / Math.PI) * 128);
 
-                    double ro = a * Math.cos(theta) + b * Math.sin(theta);
-                    Double[] key = new Double[]{theta, ro};
+                    double ro = a1 * Math.cos(theta) + b1 * Math.sin(theta);
 
-                    if (votes.containsKey(key)) {
-                        int n = votes.get(key) + 1;
-                        votes.remove(key);
-                        votes.put(new Double[]{theta, ro}, n);
-                    } else
-                        votes.put(key, 1);
->>>>>>> 26da415c9bcb0ed000c77b3f142b75aac6d1e945
+                    float a2=1;
+                    float b2= (float) ((ro- a2*Math.cos(theta))/Math.sin(theta));
+
+                    Point l1= new Point(a1,b1);
+                    Point l2 = new Point(a2,b2);
+
+                    Point intersection= intersection(x0_h,y0_h,x1_h,y1_h,a1,b1,a2,b2,src.rows(),src.cols());
+
+                    //p=x*cos(theta) + y * sen(theta)
+                    if (intersection!=null) {
+                        if (votes.containsKey(intersection)) {
+                            ArrayList<Line> lineArray = votes.get(intersection);
+                            lineArray.add(new Line(l1,l2));
+                            votes.remove(intersection);
+                            votes.put(intersection, lineArray);
+                        } else
+                            ArrayList<Line> lineArray = new ArrayList<>();
+                            lineArray.add(new Line(l1,l2));
+                            votes.put(intersection, lineArray);
+                    }
                 }
             }
         }
-        /*
 
-        //BGR Mat
-        src = canny(src);
-        HashMap<Double[], Integer> votes = new HashMap<Double[], Integer>();
-
-        for (int i = 0; i < src.rows(); i++) {
-            for (int j = 0; i < src.cols(); j++) {
-                if (Math.sqrt(i * i + j * j) >= threshold) {
-                    float x = j - src.cols() / 2;
-                    float y = src.rows() / 2 - i;
-                    double theta = Core.fastAtan2(x, y);;
-                    double ro = x * Math.cos(theta) + y * Math.sin(theta);
-
-                }
+        Point fuga = null;
+        int maxValue=0;
+        Iterator it = votes.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<Point,ArrayList<Line>> pair = (Map.Entry)it.next();
+            if(pair.getValue().size()>maxValue){
+                fuga=pair.getKey();
+                maxValue=pair.getValue().size();
+                System.out.println(pair.getKey() + " = " + pair.getValue().size());
             }
+            it.remove();
+
         }
-*/
+        Imgproc.line(src,new Point(x0_h,y0_h),new Point(x1_h,y1_h), new Scalar (255,0,0),1);
+        Imgproc.circle(src,fuga,3,new Scalar(0, 0, 255),3);
+        return src;
+    }
+
+    public Point intersection(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4,int fils, int cols) {
+        float d = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4);
+        if (d == 0) return null;
+
+        float xi = ((x3-x4)*(x1*y2-y1*x2)-(x1-x2)*(x3*y4-y3*x4))/d;
+        float yi = ((y3-y4)*(x1*y2-y1*x2)-(y1-y2)*(x3*y4-y3*x4))/d;
+
+        if(xi<0 || xi>cols || yi<0 || yi>fils)
+            return null;
+
+        return new Point(xi,yi);
     }
 
 }
