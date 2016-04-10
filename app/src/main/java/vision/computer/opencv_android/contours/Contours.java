@@ -8,6 +8,7 @@ import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
@@ -167,7 +168,6 @@ public class Contours {
         }
     }
 
-
     public Mat sobelOrientation(Mat src, int type) {
 
         src = gaussian(src);
@@ -215,7 +215,6 @@ public class Contours {
         return mag;
     }
 
-
     public Mat scharr(Mat src) {
         return sobel(src, 1);
     }
@@ -234,6 +233,15 @@ public class Contours {
         return canny;
     }
 
+    private int cvRound(double x) {
+        int y;
+        if (x >= (int) x + 0.5)
+            y = (int) x++;
+        else
+            y = (int) x;
+        return y;
+    }
+
     public Mat Hough(Mat src, int threshold) {
         Mat lines = new Mat();
         int minLineSize = 10;
@@ -248,26 +256,28 @@ public class Contours {
          */
 
         src = sobel(src,0);
+        Rect imageRect = new Rect(new Point(0,0), new Point(src.rows(),src.cols()));
         Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
-        Imgproc.HoughLinesP(src, lines, 1, Math.PI / 180, threshold,
-                minLineSize, lineGap);
+        Imgproc.HoughLines(src, lines, 1, Math.PI / 90, threshold);
 
         for (int x = 0; x < lines.cols(); x++) {
 
-            double[] vec = lines.get(0, x);
+            double rho = lines.get(x, 0)[0];
+            double theta = lines.get(x, 1)[0];
 
-            double x1 = vec[0],
-                    y1 = vec[1],
-                    x2 = vec[2],
-                    y2 = vec[3];
+            double a = Math.cos(theta);
+            double b = Math.sin(theta);
+            double x0 = a * rho;
+            double y0 = b * rho;
+
+            Point p1 = new Point(cvRound(x0 + 1000 * (-b)), cvRound(y0 + 1000 * (a)));
+            Point p2 = new Point(cvRound(x0 - 1000 * (-b)), cvRound(y0 - 1000 * (a)));
 
             //Starting point over the horizon and ending point below it or the other way around
-            if ((y1 > (src.rows() / 2) && y2 < (src.rows() / 2)) ||
-                    (y1 < (src.rows() / 2) && y2 < (src.rows() / 2))) {
-                Point start = new Point(x1, y1);
-                Point end = new Point(x2, y2);
-
-                Imgproc.line(src, start, end, new Scalar(255, 0, 0), 3);
+            if ((p1.y > (src.rows() / 2) && p2.y < (src.rows() / 2)) ||
+                    (p1.y < (src.rows() / 2) && p2.y < (src.rows() / 2))) {
+                Imgproc.clipLine(imageRect,p1,p2);
+                Imgproc.line(src, p1, p2, new Scalar(255, 0, 0), 3);
             }
         }
         Imgproc.cvtColor(src, src, Imgproc.COLOR_GRAY2BGR);
