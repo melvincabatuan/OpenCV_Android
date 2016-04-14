@@ -2,7 +2,6 @@ package vision.computer.opencv_android.gui;
 
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
@@ -39,9 +38,7 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -161,6 +158,7 @@ public class MainActivity extends AppCompatActivity
         imageTypes.add(getResources().getString(R.string.menu_cartoon));
         imageTypes.add(getResources().getString(R.string.menu_cartoon_v1));
         imageTypes.add(getResources().getString(R.string.menu_cartoon_v2));
+        imageTypes.add(getResources().getString(R.string.menu_PuntoFuga));
 
         imageSegmentation = getResources().getStringArray(R.array.menu_segmentation);
         imageContours = getResources().getStringArray(R.array.menu_contours);
@@ -380,6 +378,9 @@ public class MainActivity extends AppCompatActivity
             } else if (item.getTitle().equals(getResources().getString(R.string.menu_cartoon_v1))) {
                 if (!mPhotoType.containsKey(getResources().getString(R.string.menu_cartoon_v1)))
                     mPhotoType.put(getResources().getString(R.string.menu_cartoon_v1), 1);
+            } else if (item.getTitle().equals(getResources().getString(R.string.menu_PuntoFuga))) {
+                if (!mPhotoType.containsKey(getResources().getString(R.string.menu_PuntoFuga)))
+                    mPhotoType.put(getResources().getString(R.string.menu_PuntoFuga), 1);
             } else if (item.getTitle().equals(getResources().getString(R.string.menu_cartoon_v2))) {
                 if (!mPhotoType.containsKey(getResources().getString(R.string.menu_cartoon_v2)))
                     mPhotoType.put(getResources().getString(R.string.menu_cartoon_v2), 1);
@@ -581,11 +582,11 @@ public class MainActivity extends AppCompatActivity
                 }
                 else if (mPhotoCont.size() == 2 && mPhotoCont.get(1).equals("SobelX")) {
                     mStaticImage = true;
-                    mBgr = contours.sobelHorizontal(mBgr, 0,true);
+                    mBgr = contours.sobelHorizontal(mBgr, 0);
                 }
                 else if (mPhotoCont.size() == 2 && mPhotoCont.get(1).equals("SobelY")) {
                     mStaticImage = true;
-                    mBgr = contours.sobelVertical(mBgr, 0,true);
+                    mBgr = contours.sobelVertical(mBgr, 0);
                 }
                 else if (mPhotoCont.size() == 2 && mPhotoCont.get(1).equals("SobelMagnitude")) {
                     mStaticImage = true;
@@ -599,13 +600,13 @@ public class MainActivity extends AppCompatActivity
                     mStaticImage = true;
                     mBgr = contours.scharr(mBgr);
                 }
-                else if (mPhotoCont.size() == 2 && mPhotoCont.get(1).equals("Canny")) {
-                    mStaticImage = true;
-                    mBgr = contours.canny(mBgr);
-                }
                 else if (mPhotoCont.size() == 2 && mPhotoCont.get(1).equals("Punto Central")) {
                     mStaticImage = true;
-                    mBgr = contours.Hough(mBgr,15);
+                    mBgr = contours.Hough(mBgr,100);
+                }
+                else if (mPhotoCont.size() == 2 && mPhotoCont.get(1).equals("Punto Central - Live")) {
+                    mStaticImage = true;
+                    mBgr = contours.HoughLive(mBgr,100);
                 }
             }
             else {
@@ -673,6 +674,9 @@ public class MainActivity extends AppCompatActivity
 
                     if (mPhotoType.containsKey(getResources().getString(R.string.menu_cartoon_v2)))
                         mBgr = F.cart_p2(mBgr);
+
+                    if (mPhotoType.containsKey(getResources().getString(R.string.menu_PuntoFuga)))
+                        mBgr = contours.HoughLive(mBgr,100);
 
                     if (post) {
                         Imgproc.cvtColor(mBgr, rgba, Imgproc.COLOR_BGR2RGBA, 3);

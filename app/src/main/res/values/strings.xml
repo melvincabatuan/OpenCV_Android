@@ -31,6 +31,7 @@
     <string name="menu_cartoon">Cartoon</string>
     <string name="menu_cartoon_v1">Cartoon Paso1</string>
     <string name="menu_cartoon_v2">Cartoon Paso2</string>
+    <string name="menu_PuntoFuga">Punto Fuga</string>
 
     <string-array name="menu_contours">
         <item>Load image</item>
@@ -40,8 +41,8 @@
         <item>SobelOrient</item>
         <item>SobelContorno</item>
         <item>Scharr</item>
-        <item>Canny</item>
         <item>Punto Central</item>
+        <item>Punto Central - Live</item>
     </string-array>
 
     <string-array name="menu_segmentation">
