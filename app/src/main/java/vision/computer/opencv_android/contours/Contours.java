@@ -39,7 +39,7 @@ public class Contours {
     private static ArrayList<String> files;
     private static int nImageIndex;
 
-    private static int DDEPTH_SOBEL=CvType.CV_16S;
+    private static int DDEPTH_SOBEL = CvType.CV_16S;
 
     private TrainingData[] td = new TrainingData[5];
 
@@ -85,7 +85,7 @@ public class Contours {
     }
 
     public Mat gaussian(Mat src) {
-        Imgproc.GaussianBlur(src, src, new Size(3, 3), 0, 0,Core.BORDER_DEFAULT);
+        Imgproc.GaussianBlur(src, src, new Size(3, 3), 0, 0, Core.BORDER_DEFAULT);
         return src;
     }
 
@@ -94,7 +94,7 @@ public class Contours {
         Mat rst = new Mat(src.size(), CvType.CV_8U);
         src = gaussian(src);
         Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
-        Mat grad_x= new Mat(), grad_y= new Mat();
+        Mat grad_x = new Mat(), grad_y = new Mat();
 
         Imgproc.Sobel(src, grad_x, DDEPTH_SOBEL, 0, 1, 3, 1, 0);
         Imgproc.Sobel(src, grad_y, DDEPTH_SOBEL, 0, 1, 3, -1, 0);
@@ -162,10 +162,9 @@ public class Contours {
 
     public Mat sobelOrientation(Mat src, int type) {
 
-        //src = gaussian(src);
         Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
 
-        Mat grad_x= new Mat();
+        Mat grad_x = new Mat();
         Imgproc.Sobel(src, grad_x, DDEPTH_SOBEL, 1, 0, 3, 1, 0);
         Mat grad_y = new Mat();
         Imgproc.Sobel(src, grad_y, DDEPTH_SOBEL, 0, 1, 3, -1, 0);
@@ -176,8 +175,8 @@ public class Contours {
             for (int x = 0; x < grad_y.cols(); x++) {
                 short a = (short) grad_y.get(y, x)[0];
                 short b = (short) grad_x.get(y, x)[0];
-                float  atandeg =  Core.fastAtan2(a,b);
-                float atan = (float) (atandeg*(Math.PI/180));
+                float atandeg = Core.fastAtan2(a, b);
+                float atan = (float) (atandeg * (Math.PI / 180));
 
                 orientation.put(y, x, (atan / Math.PI) * 128);
             }
@@ -192,7 +191,7 @@ public class Contours {
         src = gaussian(src);
         Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
 
-        Mat grad_x= new Mat();
+        Mat grad_x = new Mat();
         Imgproc.Sobel(src, grad_x, DDEPTH_SOBEL, 1, 0, 3, 1, 0);
         Mat grad_y = new Mat();
         Imgproc.Sobel(src, grad_y, DDEPTH_SOBEL, 0, 1, 3, -1, 0);
@@ -224,25 +223,25 @@ public class Contours {
     }
 
     public Mat Hough(Mat src, int threshold) {
-        double var=0.1;
-        double yline1=-1000;
-        double yline2=1000;
+        double var = 0.1;
+        double yline1 = -1000;
+        double yline2 = 1000;
 
         Mat draw = src.clone();
         src = gaussian(src);
         Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
 
-        Mat grad_x= new Mat();
+        Mat grad_x = new Mat();
         Imgproc.Sobel(src, grad_x, DDEPTH_SOBEL, 1, 0, 3, 1, 0);
         Mat grad_y = new Mat();
         Imgproc.Sobel(src, grad_y, DDEPTH_SOBEL, 0, 1, 3, 1, 0);
 
         HashMap<Integer, ArrayList<Line>> votes = new HashMap<Integer, ArrayList<Line>>();
 
-        int[] votationVector= new int[src.cols()];
+        int[] votationVector = new int[src.cols()];
 
         //Horizonte
-        int y_h = src.rows()/2;
+        int y_h = src.rows() / 2;
         int x_h = 0;
 
         for (int y = 0; y < src.rows(); y++) {
@@ -252,27 +251,26 @@ public class Contours {
                 float mag = (float) Math.sqrt(a1 * a1 + b1 * b1);
 
                 if (mag >= threshold) {
-                    double  atandeg = Core.fastAtan2(b1,a1);
-                    double theta = (atandeg*(Math.PI/180));     /*Pasar grados a radianes*/
-                    //theta = (theta / Math.PI) * 128;
+                    double atandeg = Core.fastAtan2(b1, a1);
+                    double theta = (atandeg * (Math.PI / 180));     /*Pasar grados a radianes*/
 
-                    double sinO=round(Math.sin(theta),3);
-                    double cosO=round(Math.cos(theta),3);
+                    double sinO = Math.sin(theta);
+                    double cosO = Math.cos(theta);
 
                     if (Math.abs(sinO) > var && Math.abs(cosO) > var) {
                         double ro = x * cosO + y * sinO;
-                        int xp = cvRound( ( ro - src.rows()/2 * sinO ) / cosO );
-                        if (xp >= 0 && xp < src.cols()){
+                        int xp = cvRound((ro - src.rows() / 2 * sinO) / cosO);
+                        if (xp >= 0 && xp < src.cols()) {
 
-						/**
-                         * El punto de contorno vota su interseccion con horizonte
-                         */
-                            //Imgproc.line(draw,new Point (x,y),new Point (x+1,y+1),new Scalar(255,0,0),2);
+                            /**
+                             * El punto de contorno vota su interseccion con horizonte
+                             */
                             votationVector[xp] = votationVector[xp] + 1;
-                            double xLine1=( ro - yline1 * sinO ) / cosO;
-                            double xLine2=( ro - yline2 * sinO ) / cosO;
 
-                            if (votes.containsKey(xp)) {
+                            //double xLine1=( ro - yline1 * sinO ) / cosO;
+                            //double xLine2=( ro - yline2 * sinO ) / cosO;
+
+/*                            if (votes.containsKey(xp)) {
                                 ArrayList<Line> lineArray = votes.get(xp);
                                 lineArray.add(new Line(new Point (xLine1,yline1),new Point (xLine2,yline2)));
                                 votes.remove(xp);
@@ -281,58 +279,57 @@ public class Contours {
                                 ArrayList<Line> lineArray = new ArrayList<>();
                                 lineArray.add(new Line(new Point (xLine1,yline1),new Point (xLine2,yline2)));
                                 votes.put(xp, lineArray);
-                            }
+                            }*/
                         }
                     }
                 }
             }
         }
 
-        for(int i = 1; i < src.cols(); i++){
+        for (int i = 1; i < src.cols(); i++) {
             if (votationVector[x_h] < votationVector[i]) {
                 x_h = i;
-                Log.d("DBG", "vv: "+votationVector[x_h]);
+                Log.d("DBG", "vv: " + votationVector[x_h]);
             }
         }
 
-        ArrayList<Line> lineasFuga=votes.get(x_h);
-
-        for(Line l : lineasFuga){
+        //ArrayList<Line> lineasFuga=votes.get(x_h);
+        /*for(Line l : lineasFuga){
             Log.d("DBG", "lineas: "+l.getPoint1()+"  "+l.getPoint2());
-           //Imgproc.line(draw,l.getPoint1(),l.getPoint2(), new Scalar (255,0,0),2);
-        }
+           Imgproc.line(draw,l.getPoint1(),l.getPoint2(), new Scalar (255,0,0),2);
+        }*/
 
-        Log.d("DBG", "vv: "+votationVector[x_h]);
-        Log.d("RES", "Punto de fuga: "+x_h+","+y_h);
+        Log.d("DBG", "vv: " + votationVector[x_h]);
+        Log.d("RES", "Punto de fuga: " + x_h + "," + y_h);
 
-        Imgproc.line(draw,new Point(0,src.rows()/2),new Point(src.cols(),src.rows()/2), new Scalar (0,0,255),2);
-        Imgproc.line(draw,new Point (x_h-10,y_h+10),new Point (x_h+10,y_h-10),new Scalar(0,0,255),1);
-        Imgproc.line(draw,new Point (x_h-10,y_h-10),new Point (x_h+10,y_h+10),new Scalar(0,0,255),1);
+        Imgproc.line(draw, new Point(0, src.rows() / 2), new Point(src.cols(), src.rows() / 2), new Scalar(0, 0, 255), 2);
+        Imgproc.line(draw, new Point(x_h - 10, y_h + 10), new Point(x_h + 10, y_h - 10), new Scalar(0, 0, 255), 1);
+        Imgproc.line(draw, new Point(x_h - 10, y_h - 10), new Point(x_h + 10, y_h + 10), new Scalar(0, 0, 255), 1);
 
         return draw;
     }
 
     public Mat HoughLive(Mat src, int threshold) {
-        double var=0.1;
-        double yline1=-1000;
-        double yline2=1000;
+        double var = 0.3;
+        double yline1 = -1000;
+        double yline2 = 1000;
 
         Mat draw = src.clone();
         src = gaussian(src);
         Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2GRAY);
 
-        Mat grad_x= new Mat();
+        Mat grad_x = new Mat();
         Imgproc.Sobel(src, grad_x, DDEPTH_SOBEL, 1, 0, 3, 1, 0);
         Mat grad_y = new Mat();
         Imgproc.Sobel(src, grad_y, DDEPTH_SOBEL, 0, 1, 3, 1, 0);
 
         HashMap<Integer, ArrayList<Line>> votations = new HashMap<Integer, ArrayList<Line>>();
 
-        int[] votationVector= new int[src.cols()];
-        int [][] votes = new int [src.rows()][src.cols()];
+        int[] votationVector = new int[src.cols()];
+        int[][] votes = new int[src.rows()][src.cols()];
 
         //Horizonte
-        int y_h = src.rows()/2;
+        int y_h = src.rows() / 2;
         int x_h = 0;
 
         for (int y = 0; y < src.rows(); y++) {
@@ -342,57 +339,60 @@ public class Contours {
                 float mag = (float) Math.sqrt(a1 * a1 + b1 * b1);
 
                 if (mag >= threshold) {
-                    double  atandeg = Core.fastAtan2(b1,a1);
-                    double theta = (atandeg*(Math.PI/180));     /*Pasar grados a radianes*/
+                    double atandeg = Core.fastAtan2(b1, a1);
+                    double theta = (atandeg * (Math.PI / 180));     /*Pasar grados a radianes*/
                     //theta = (theta / Math.PI) * 128;
 
-                    double sinO=round(Math.sin(theta),3);
-                    double cosO=round(Math.cos(theta),3);
+                    double sinO = Math.sin(theta);
+                    double cosO = Math.cos(theta);
 
                     if (Math.abs(sinO) > var && Math.abs(cosO) > var) {
                         double ro = x * cosO + y * sinO;
-                        for (int yb = 20; yb < src.rows()-20; yb++) {
+                        for (int yb = 0; yb < src.rows(); yb++) {
                             int y_int = yb;
                             int x_int = cvRound((ro - y_int * sinO) / cosO);
 
                             if (x_int >= 0 && x_int < src.cols()) {
                                 /* Realiza la votacion al punto de interseccion */
                                 votes[y_int][x_int] = votes[y_int][x_int] + 1;
+
                             }
                         }
                     }
                 }
             }
         }
-        int max_i=0;
-        int max_j=0;
-        for(int i = 1; i < src.rows(); i++){
-            for(int j = 1; j < src.cols(); j++){
+        int max_i = 0;
+        int max_j = 0;
+        for (int i = 1; i < src.rows(); i++) {
+            for (int j = 1; j < src.cols(); j++) {
                 if (votes[max_i][max_j] < votes[i][j]) {
                     max_i = i;
                     max_j = j;
+                    Imgproc.line(draw, new Point(max_j - 1, max_i + 1), new Point(max_j + 1, max_i - 1), new Scalar(0, 255,0), 1);
+                    Imgproc.line(draw, new Point(max_j - 1, max_i - 1), new Point(max_j + 1, max_i + 1), new Scalar(0, 255,0), 1);
                 }
             }
         }
-        Log.d("RES", "Punto de fuga: "+max_j+","+max_i);
+        Log.d("RES", "Punto de fuga: " + max_j + "," + max_i);
 
-        Imgproc.line(draw,new Point (max_j-10,max_i+10),new Point (max_j+10,max_i-10),new Scalar(0,0,255),1);
-        Imgproc.line(draw,new Point (max_j-10,max_i-10),new Point (max_j+10,max_i+10),new Scalar(0,0,255),1);
+        Imgproc.line(draw, new Point(max_j - 10, max_i + 10), new Point(max_j + 10, max_i - 10), new Scalar(0, 0, 255), 1);
+        Imgproc.line(draw, new Point(max_j - 10, max_i - 10), new Point(max_j + 10, max_i + 10), new Scalar(0, 0, 255), 1);
 
         return draw;
     }
 
-    public Point intersection(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4,int fils, int cols) {
-        float d = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4);
+    public Point intersection(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4, int fils, int cols) {
+        float d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
         if (d == 0) return null;
 
-        float xi = ((x3-x4)*(x1*y2-y1*x2)-(x1-x2)*(x3*y4-y3*x4))/d;
-        float yi = ((y3-y4)*(x1*y2-y1*x2)-(y1-y2)*(x3*y4-y3*x4))/d;
+        float xi = ((x3 - x4) * (x1 * y2 - y1 * x2) - (x1 - x2) * (x3 * y4 - y3 * x4)) / d;
+        float yi = ((y3 - y4) * (x1 * y2 - y1 * x2) - (y1 - y2) * (x3 * y4 - y3 * x4)) / d;
 
-        if(xi<0 || xi>cols || yi<0 || yi>fils)
+        if (xi < 0 || xi > cols || yi < 0 || yi > fils)
             return null;
 
-        return new Point(xi,yi);
+        return new Point(xi, yi);
     }
 
     public static double round(double value, int places) {

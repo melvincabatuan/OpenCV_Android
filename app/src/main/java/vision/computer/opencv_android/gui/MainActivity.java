@@ -602,11 +602,7 @@ public class MainActivity extends AppCompatActivity
                 }
                 else if (mPhotoCont.size() == 2 && mPhotoCont.get(1).equals("Punto Central")) {
                     mStaticImage = true;
-                    mBgr = contours.Hough(mBgr,100);
-                }
-                else if (mPhotoCont.size() == 2 && mPhotoCont.get(1).equals("Punto Central - Live")) {
-                    mStaticImage = true;
-                    mBgr = contours.HoughLive(mBgr,100);
+                    mBgr = contours.Hough(mBgr,20);
                 }
             }
             else {

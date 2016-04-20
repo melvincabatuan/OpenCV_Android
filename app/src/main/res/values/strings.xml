@@ -42,10 +42,17 @@
         <item>SobelContorno</item>
         <item>Scharr</item>
         <item>Punto Central</item>
-        <item>Punto Central - Live</item>
     </string-array>
 
     <string-array name="menu_segmentation">
+        <item>Load image</item>
+        <item>Otsu</item>
+        <item>Adaptative</item>
+        <item>Contours</item>
+        <item>Recognition</item>
+    </string-array>
+
+    <string-array name="menu_panoramic">
         <item>Load image</item>
         <item>Otsu</item>
         <item>Adaptative</item>
