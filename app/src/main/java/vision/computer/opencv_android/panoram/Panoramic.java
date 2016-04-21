@@ -90,7 +90,13 @@ public class Panoramic {
         return src;
     }
 
-    public Mat matching(Mat src1, Mat src2) {
+    public Mat matching() {
+
+        Mat src1 = Imgcodecs.imread(path + files.get(0));
+        Mat src2 = Imgcodecs.imread(path + files.get(1));
+
+        Imgproc.cvtColor(src1, src1, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.cvtColor(src2, src2, Imgproc.COLOR_BGR2GRAY);
 
         FeatureDetector detector = FeatureDetector.create(FeatureDetector.ORB);
         DescriptorExtractor descriptor = DescriptorExtractor.create(DescriptorExtractor.ORB);
@@ -102,10 +108,10 @@ public class Panoramic {
         descriptors[0] = new Mat();
         descriptors[1] = new Mat();
 
-        detector.detect(src1, keypoints1, null);
-        descriptor.compute(src2, keypoints1, descriptors[0]);
+        detector.detect(src1, keypoints1);
+        descriptor.compute(src1, keypoints1, descriptors[0]);
 
-        detector.detect(src1, keypoints2, null);
+        detector.detect(src2, keypoints2);
         descriptor.compute(src2, keypoints2, descriptors[1]);
 
         // matcher should include 2 different image's descriptors

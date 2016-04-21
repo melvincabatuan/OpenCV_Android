@@ -54,10 +54,8 @@
 
     <string-array name="menu_panoramic">
         <item>Load image</item>
-        <item>Otsu</item>
-        <item>Adaptative</item>
-        <item>Contours</item>
-        <item>Recognition</item>
+        <item>Matches</item>
+        <item>RANSAC</item>
     </string-array>
 
     <string name="photo_delete_prompt_message">This photo is saved in your Gallery. Do you want to delete it?</string>
@@ -70,6 +68,7 @@
     <string name="share">Share</string>
     <string name="menu_image_seg">Image segmentation</string>
     <string name="menu_contours">Contours</string>
+    <string name="menu_panoramic">Panoram</string>
     <string name="title_activity_recognition">RecognitionActivity</string>
     <!-- strings -->
 </resources>
